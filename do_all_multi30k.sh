@@ -1,4 +1,4 @@
-rootpath=/home/wyb/wyb/workspace/VisualSearch
+rootpath=$2
 overwrite=1
 collection=multi30k
 visual_feature=resnet_152

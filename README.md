@@ -1,7 +1,5 @@
 # Cross-Lingual Cross-Modal Retrieval with Noise-Robust Learning
 
-------
-
 source code of our paper [Cross-Lingual Cross-Modal Retrieval with Noise-Robust Learning](#)
 
 ![image](framework.png)

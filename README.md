@@ -78,7 +78,6 @@ mkdir TextData
 mkdir FeatureData && cd FeatureData
 tar zxf <feat-Name>.tar.gz
 
-
 # download the data of msrvtt10kcn
 mkdir msrvtt10kcn && cd msrvtt10kcn
 mkdir TextData
@@ -140,7 +139,7 @@ conda activate nrccr_env
 
 Run the following script to train and evaluate `NRCCR` network on MSR-VTT-CN.
 
-```
+```shell
 ROOTPATH=$HOME/VisualSearch
 
 conda activate nrccr_env
@@ -163,7 +162,7 @@ conda activate nrccr_env
 
 Run the following script to train and evaluate `NRCCR` network on Multi-30K.
 
-```
+```shell
 ROOTPATH=$HOME/VisualSearch
 
 conda activate nrccr_env

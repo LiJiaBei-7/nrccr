@@ -95,7 +95,7 @@ tar zxf <feat-Name>.tar.gz
 
 
 
-## NRCCE on VATEX
+## NRCCR on VATEX
 
 
 
@@ -131,7 +131,7 @@ conda activate nrccr_env
 
 
 
-## NRCCE on MSR-VTT-CN
+## NRCCR on MSR-VTT-CN
 
 
 
@@ -154,7 +154,7 @@ conda activate nrccr_env
 
 
 
-## NRCCE on Multi-30K
+## NRCCR on Multi-30K
 
 
 

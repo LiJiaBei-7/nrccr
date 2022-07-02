@@ -31,17 +31,9 @@ def parse_args():
     parser.add_argument('--measure_2', type=str, default='jaccard', help='measure method. (default: cosine)')
     parser.add_argument('--dropout', type=float, default=0.2, help='dropout rate (default: 0.2)')
     # text-side multi-level encoding
-    parser.add_argument('--vocab', type=str, default='word_vocab_5', help='word vocabulary. (default: word_vocab_5)')
-    parser.add_argument('--word_dim', type=int, default=500, help='word embedding dimension')
-    parser.add_argument('--text_rnn_size', type=int, default=512, help='text rnn encoder size. (default: 1024)')
-    parser.add_argument('--text_kernel_num', type=int, default=512, help='number of each kind of text kernel')
-    parser.add_argument('--text_kernel_sizes', type=str, default='2-3-4', help='dash-separated kernel size to use for text convolution')
     parser.add_argument('--text_norm', action='store_true', help='normalize the text embeddings at last layer')
     # video-side multi-level encoding
     parser.add_argument('--visual_feature', type=str, default='resnet-152-img1k-flatten0_outputos', help='visual feature.')
-    parser.add_argument('--visual_rnn_size', type=int, default=512, help='visual rnn encoder size')
-    parser.add_argument('--visual_kernel_num', type=int, default=512, help='number of each kind of visual kernel')
-    parser.add_argument('--visual_kernel_sizes', type=str, default='2-3-4-5', help='dash-separated kernel size to use for visual convolution')
     parser.add_argument('--visual_norm', action='store_true', help='normalize the visual embeddings at last layer')
     parser.add_argument('--gru_pool', type=str, default='mean', help='pooling on output of gru (mean|max)')
     # common space learning
@@ -69,7 +61,6 @@ def parse_args():
     parser.add_argument('--log_step', type=int, default=10, help='Number of steps to print and record the log.')
     parser.add_argument('--cv_name', type=str, default='cv_tpami_2021', help='')
     #tag
-    parser.add_argument('--tag_vocab_size', type=int, default=512, help='what the size of tag vocab will you use')
     parser.add_argument('--framework', type=str, default='baseline')
 
     parser.add_argument('--frozen', type=str, default='frozen')
@@ -88,7 +79,7 @@ def parse_args():
     parser.add_argument('--scale', type=float, default=0.001, help='')
     parser.add_argument('--glr', type=float, default=0.001, help='lr of GAN')
     parser.add_argument('--disc_type', type=str, default='weak', help='weak | not so weak| strong')
-    parser.add_argument('--momentum', type=float, default='weak', help='weak | not so weak| strong')
+    parser.add_argument('--momentum', type=float)
     parser.add_argument('--optim', type=str, default='adam', help='adam | sgd | ')
 
     parser.add_argument('--tri_alpha', type=float, default=0.6,)

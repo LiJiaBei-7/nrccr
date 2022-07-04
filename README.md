@@ -123,9 +123,34 @@ conda activate nrccr_env
 
 ### Evaluation using Provided Checkpoints
 
+Download trained checkpoint on VATEX ([model_best.pth.tar; pwd:ise6](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA)) and run the following script to evaluate it.
+
+```shell
+ROOTPATH=$HOME/VisualSearch/
+
+tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
+
+./do_test_vatex.sh $ROOTPATH $MODELDIR <gpu-id>
+# $MODELDIR is the path of checkpoints, $ROOTPATH/.../runs_0
+```
+
 
 
 ### Expected Performance
+
+<table>
+  <tr align="center">
+    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    </tr>
+  <tr align="center">
+        <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+    <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+  </tr>
+  <tr align="center">
+    <td>VATEX</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
+    <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
+  </tr>
+</table>
 
 
 
@@ -167,7 +192,7 @@ ROOTPATH=$HOME/VisualSearch
 
 conda activate nrccr_env
 
-# To train the model on the VATEX
+# To train the model on the Multi-30K
 ./do_all_multi30k.sh $ROOTPATH <gpu-id>
 ```
 
@@ -175,7 +200,19 @@ conda activate nrccr_env
 
 ### Expected Performance
 
-
+<table>
+  <tr align="center">
+    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    </tr>
+  <tr align="center">
+        <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+    <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+  </tr>
+  <tr align="center">
+    <td>VATEX</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
+    <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
+  </tr>
+</table>
 
 
 

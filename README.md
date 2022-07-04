@@ -177,6 +177,8 @@ conda activate nrccr_env
 
 ### Expected Performance
 
+Download trained checkpoint on MSR-VTT-CN from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
+
 
 
 ## NRCCR on Multi-30K
@@ -200,6 +202,8 @@ conda activate nrccr_env
 
 ### Expected Performance
 
+Download trained checkpoint on Multi-30K from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
+
 <table>
   <tr align="center">
     <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
@@ -209,7 +213,7 @@ conda activate nrccr_env
     <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
   </tr>
   <tr align="center">
-    <td>VATEX</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
+    <td>Multi-30K</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
     <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
   </tr>
 </table>

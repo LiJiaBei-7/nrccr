@@ -123,7 +123,7 @@ conda activate nrccr_env
 
 ### Evaluation using Provided Checkpoints
 
-Download trained checkpoint on VATEX ([model_best.pth.tar; pwd:ise6](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA)) and run the following script to evaluate it.
+Download trained checkpoint on VATEX from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
 
 ```shell
 ROOTPATH=$HOME/VisualSearch/

@@ -16,9 +16,11 @@ source code of our paper [Cross-Lingual Cross-Modal Retrieval with Noise-Robust 
   * [Expected Performance](#Expected-Performance)
 * [NRCCR on MSRVTT10K-CN](#NRCCR-on-MSRVTT10K-CN)
   * [Model Training and Evaluation](#model-training-and-evaluation-1)
+  * [Evaluation using Provided Checkpoints](#Evaluation-using-Provided-Checkpoints-1)
   * [Expected Performance](#Expected-Performance-1)
 * [NRCCR on Multi-30K](#NRCCR-on-Multi-30K)
   * [Model Training and Evaluation](#model-training-and-evaluation-2)
+  * [Evaluation using Provided Checkpoints](#Evaluation-using-Provided-Checkpoints-2)
   * [Expected Performance](#Expected-Performance-2)
 * [Reference](#Reference)
 

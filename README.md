@@ -97,8 +97,6 @@ tar zxf <feat-Name>.tar.gz
 
 ## NRCCR on VATEX
 
-
-
 ### Model Training and Evaluation
 
 Run the following script to train and evaluate `NRCCR` network. Specifically, it will train `NRCCR` network and select a checkpoint that performs best on the validation set as the final model. Notice that we only save the best-performing checkpoint on the validation set to save disk space.
@@ -147,7 +145,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
     <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
   </tr>
   <tr align="center">
-    <td>VATEX</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
+    <td>en2cn</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
     <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
   </tr>
 </table>
@@ -156,9 +154,8 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 
 
+
 ## NRCCR on MSR-VTT-CN
-
-
 
 ### Model Training and Evaluation
 
@@ -175,15 +172,42 @@ conda activate nrccr_env
 
 
 
-### Expected Performance
+### Evaluation using Provided Checkpoints
 
 Download trained checkpoint on MSR-VTT-CN from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
+
+```shell
+ROOTPATH=$HOME/VisualSearch/
+
+tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
+
+./do_test_msrvttcn.sh $ROOTPATH $MODELDIR <gpu-id>
+# $MODELDIR is the path of checkpoints, $ROOTPATH/.../runs_0
+```
+
+
+
+### Expected Performance
+
+<table>
+  <tr align="center">
+    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    </tr>
+  <tr align="center">
+        <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+    <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
+  </tr>
+  <tr align="center">
+    <td>en2cn</td><td>29.6</td><td>55.8</td><td> 67.4</td><td>4.0</td><td>41.93</td>
+    <td>31.3</td><td>56.0</td><td>67.2</td><td>4.0</td><td>43.00</td><td>307.3</td>
+  </tr>
+</table>
+
+
 
 
 
 ## NRCCR on Multi-30K
-
-
 
 ### Model Training and Evaluation
 
@@ -200,9 +224,22 @@ conda activate nrccr_env
 
 
 
-### Expected Performance
+### Evaluation using Provided Checkpoints
 
 Download trained checkpoint on Multi-30K from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
+
+```shell
+ROOTPATH=$HOME/VisualSearch/
+
+tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
+
+./do_test_multi30k.sh $ROOTPATH $MODELDIR <gpu-id>
+# $MODELDIR is the path of checkpoints, $ROOTPATH/.../runs_0
+```
+
+
+
+### Expected Performance
 
 <table>
   <tr align="center">
@@ -213,10 +250,19 @@ Download trained checkpoint on Multi-30K from Baidu pan ([url](https://pan.baidu
     <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
   </tr>
   <tr align="center">
-    <td>Multi-30K</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
-    <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
+    <td>en2de</td><td>53.8</td><td>81.8</td><td>88.3</td><td>1.0</td><td>66.60</td>
+    <td>53.8</td><td>82.7</td><td>90.3</td><td>1.0</td><td>66.66</td><td>450.7</td>
+  </tr>
+  <tr align="center">
+    <td>en2fr</td><td>54.7</td><td>81.7</td><td>89.2</td><td>1.0</td><td>67.05</td>
+    <td>54.9</td><td>82.7</td><td>89.7</td><td>1.0</td><td>67.29</td><td>452.9</td>
+  </tr>
+  <tr align="center">
+    <td>en2cs</td><td>52.6</td><td>79.4</td><td>87.9</td><td>1.0</td><td>65.26</td>
+    <td>52.3</td><td>78.7</td><td>87.8</td><td>1.0</td><td>64.68</td><td>438.7</td>
   </tr>
 </table>
+
 
 
 

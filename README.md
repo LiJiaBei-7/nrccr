@@ -213,7 +213,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 ### Model Training and Evaluation
 
-Run the following script to train and evaluate `NRCCR` network on Multi-30K.
+Run the following script to train and evaluate `NRCCR` network on Multi-30K. Besides, if you want use the clip as the backbone to train, you need to download the raw images from [here](https://github.com/multi30k/dataset) for Flickr30K.
 
 ```shell
 ROOTPATH=$HOME/VisualSearch
@@ -252,19 +252,21 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
     <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
   </tr>
   <tr align="center">
-    <td>en2de</td><td>53.8</td><td>81.8</td><td>88.3</td><td>1.0</td><td>66.60</td>
+    <td>en2de_clip</td><td>53.8</td><td>81.8</td><td>88.3</td><td>1.0</td><td>66.60</td>
     <td>53.8</td><td>82.7</td><td>90.3</td><td>1.0</td><td>66.66</td><td>450.7</td>
   </tr>
   <tr align="center">
-    <td>en2fr</td><td>54.7</td><td>81.7</td><td>89.2</td><td>1.0</td><td>67.05</td>
+    <td>en2fr_clip</td><td>54.7</td><td>81.7</td><td>89.2</td><td>1.0</td><td>67.05</td>
     <td>54.9</td><td>82.7</td><td>89.7</td><td>1.0</td><td>67.29</td><td>452.9</td>
   </tr>
   <tr align="center">
-    <td>en2cs</td><td>52.6</td><td>79.4</td><td>87.9</td><td>1.0</td><td>65.26</td>
+    <td>en2cs_clip</td><td>52.6</td><td>79.4</td><td>87.9</td><td>1.0</td><td>65.26</td>
     <td>52.3</td><td>78.7</td><td>87.8</td><td>1.0</td><td>64.68</td><td>438.7</td>
   </tr>
+  <tr align="center">
+    <td>en2cs_resnet152</td><td>29.5</td><td>56.0</td><td>68.1</td><td>4.0</td><td>41.89</td><td>27.5</td><td>55.1</td><td>67.4</td><td>4.0</td><td>40.59</td><td>303.6</td>
+  </tr>
 </table>
-
 
 
 

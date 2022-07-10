@@ -320,12 +320,12 @@ class VisDataSet4DualEncoding(data.Dataset):
     Load video frame features by pre-trained CNN model.
     """
     def __init__(self, visual_feat, img_path, img_type, image_ids=None):
+        self.type = img_type
         self.visual_feat = visual_feat
         self.image_ids = image_ids
         self.img_path = img_path
         _, self.preprocess = clip.load("ViT-B/32", device='cpu')
         self.length = len(self.image_ids)
-        self.type = img_type
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
@@ -441,6 +441,7 @@ def get_train_data_loaders(opt, cap_files, cap_files_trans, cap_files_back, visu
                                     collate_fn=lambda x: collate_frame_gru_fn(x, opt.img_encoder))
                         for x in cap_files  if x=='train' }
     return data_loaders
+
 
 
 def get_vis_data_loader(opt, vis_feat, img_path, batch_size=100, num_workers=2, image_ids=None):

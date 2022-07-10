@@ -296,7 +296,6 @@ class Text_share(nn.Module):
         feat_self_back = self.encoder_layer(feat_back, feat_back, mask_back, mask_back)
 
         if self.pooling == 'mean':
-            # pooling_cat
             feat_cross = torch.cat((feat_cross, feat_trans), 1)
             feat_cross_vec = F.avg_pool1d(feat_cross.permute(0, 2, 1), feat_cross.size(1)).squeeze(2)
             feat_back_vec = F.avg_pool1d(feat_self_back.permute(0, 2, 1), feat_self_back.size(1)).squeeze(2)
@@ -722,8 +721,8 @@ class Model(BaseModel):
             self.text_encoding.cuda()
             cudnn.benchmark = True
 
-        self.vid_mapping = Latent_mapping(opt.visual_mapping_layers, opt.dropout, opt.tag_vocab_size)
-        self.text_mapping = Latent_mapping(opt.text_mapping_layers, opt.dropout, opt.tag_vocab_size)
+        self.vid_mapping = Latent_mapping(opt.visual_mapping_layers, opt.dropout)
+        self.text_mapping = Latent_mapping(opt.text_mapping_layers, opt.dropout)
 
         self.init_info(opt)
 

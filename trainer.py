@@ -52,10 +52,7 @@ def main():
         assert opt.text_norm is True
         assert opt.visual_norm is True
 
-    visual_encode_info = 'visual_feature_%s_visual_rnn_size_%d_visual_norm_%s' % \
-            (opt.visual_feature, opt.visual_rnn_size, opt.visual_norm)
-    visual_encode_info += "_kernel_sizes_%s_num_%s" % (opt.visual_kernel_sizes, opt.visual_kernel_num)
-    # common space learning info
+     # common space learning info
     mapping_info = "mapping_text_%s_img_%s" % (opt.text_mapping_layers, opt.visual_mapping_layers)
 
     if opt.gru_pool == 'max':
@@ -78,8 +75,6 @@ def main():
     logging.info(json.dumps(vars(opt), indent=2))
 
 
-    opt.text_kernel_sizes = list(map(int, opt.text_kernel_sizes.split('-')))
-    opt.visual_kernel_sizes = list(map(int, opt.visual_kernel_sizes.split('-')))
     opt.layer_list = list(opt.layer_list.split('-'))
 
     # caption
@@ -160,11 +155,8 @@ def main():
         # train for one epoch
         train(opt, data_loaders['train'], model, epoch)
 
-        if opt.space == 'hybrid':
-            rsum = validate.validate_hybrid(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
-        elif opt.space == 'latent':
-            rsum = validate.validate(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
-        
+        rsum = validate.validate_hybrid(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
+
         # remember best R@ sum and save checkpoint
         is_best = rsum > best_rsum
         best_rsum = max(rsum, best_rsum)

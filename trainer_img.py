@@ -35,7 +35,7 @@ def main():
 
 
     cap_file = {'train': '%s_en.caption.txt' % opt.trainCollection,
-                'val': '%s_%s_de2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0])}
+                'val': '%s_google_%s2enc.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}
 
     cap_file_trans = {'train': '%s_%s.caption.txt' % (opt.trainCollection, opt.data_type),
                 'val': '%s_%s.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}
@@ -51,11 +51,6 @@ def main():
         assert opt.visual_norm is True
 
     # checkpoint path
-
-    visual_encode_info = 'visual_feature_%s_visual_rnn_size_%d_visual_norm_%s' % \
-            (opt.visual_feature, opt.visual_rnn_size, opt.visual_norm)
-    visual_encode_info += "_kernel_sizes_%s_num_%s" % (opt.visual_kernel_sizes, opt.visual_kernel_num)
-
     framework = opt.framework
 
 
@@ -73,16 +68,13 @@ def main():
     tb_logger.configure(opt.logger_name, flush_secs=5)
     logging.info(json.dumps(vars(opt), indent=2))
 
-
-    opt.text_kernel_sizes = list(map(int, opt.text_kernel_sizes.split('-')))
-    opt.visual_kernel_sizes = list(map(int, opt.visual_kernel_sizes.split('-')))
     opt.layer_list = list(opt.layer_list.split('-'))
 
     # caption
     caption_files = { x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file[x])
                         for x in cap_file }
     caption_files_trans = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_trans[x])
-                        for x in cap_file_trans }
+                        for x in cap_file_trans}
 
     caption_files_back = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_back[x])
                            for x in cap_file_back}
@@ -93,8 +85,6 @@ def main():
         x: os.path.join(rootpath, collections_pathname[x], 'FeatureData', opt.visual_feature, visual_feature_name[x])
         for x in cap_file}
 
-    print(visual_feat_path)
-    exit()
 
     import numpy as np
     visual_feats = {x: np.load(visual_feat_path[x], encoding="latin1") for x in visual_feat_path}   #class 'numpy.ndarray'
@@ -131,7 +121,7 @@ def main():
         for line in f.readlines():
             val_image_ids_list.append(line.strip())
     val_vid_data_loader = data.get_vis_data_loader(opt, visual_feats['val'], opt.img_path, opt.batch_size, opt.workers, image_ids=val_image_ids_list)
-    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers)
+    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers, lang_type=opt.data_type.split('_'))
 
     # Construct the model
     model = get_model(opt.model)(opt)

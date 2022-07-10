@@ -1,4 +1,4 @@
-rootpath=/home/wyb/wyb/workspace/VisualSearch
+rootpath=$1
 overwrite=0
 #collection=msrvtt10kyu
 #visual_feature=resnext101-resnet152
@@ -27,14 +27,14 @@ l1_gama=0.1
 back_w=0.5
 model_type=video
 layer_list=layer.11-layer.10-layer.9-layer.8-layer.7
-framework=Full_vatex_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
+framework=all_Full_vatex_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
 /layer_list_$layer_list/glr_$glr/scale_$scale/disc_type_$disc_type/momentum_$momentum/optim_$optim/model_type_$model_type
 #framework=test
 
 
 
 # training
-gpu=$1
+gpu=$2
 CUDA_VISIBLE_DEVICES=$gpu python trainer.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
                                             --collection $collection --visual_feature $visual_feature --space $space\
                                             --framework $framework --learning_rate $learning_rate --frozen $frozen\

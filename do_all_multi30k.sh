@@ -25,14 +25,15 @@ l1_gama=0.1
 back_w=0.5
 model_type=img
 layer_list=layer.11-layer.10-layer.9-layer.8-layer.7-layer.6-layer.5-layer.4-layer.3
-framework=Full_multi30k_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
-/layer_list_$layer_list/glr_$glr/scale_$scale/disc_type_$disc_type/momentum_$momentum/optim_$optim
 
-img_path=/home/wyb/wyb/workspace/VisualSearch/multi30k/flickr30k-images
+img_path=$3
 img_encoder=clip #resnet_152
 img_encoder_name=ViT-B/32
 img_encoder_input_dim=512
 batch_size=128
+
+framework=Full_multi30k_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
+/layer_list_$layer_list/glr_$glr/scale_$scale/disc_type_$disc_type/momentum_$momentum/optim_$optim/img_encoder_$img_encoder
 
 # training
 gpu=$2

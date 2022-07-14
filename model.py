@@ -179,8 +179,7 @@ class Text_bert_encoding(nn.Module):
             'hidden_dropout_prob': 0.1,
             'attention_probs_dropout_prob': 0.1,
         }
-        # txt_bert_config = 'bert-base-cased'
-        # txt_bert_config = 'bert-large-uncased'
+
         txt_bert_config = 'bert-base-multilingual-cased'
 
         self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
@@ -189,7 +188,6 @@ class Text_bert_encoding(nn.Module):
 
     def forward(self, text, *args):
         # Embed word ids to vectors
-        # cap_wids, cap_w2vs, cap_bows, cap_mask = x
         bert_caps, cap_mask = text
 
         batch_size, max_text_words = bert_caps.size()
@@ -211,8 +209,6 @@ class Text_bert_encoding(nn.Module):
                                         token_type_ids=token_type_ids,
                                         position_ids=position_ids,
                                         head_mask=None)
-
-        # features = text_bert_output[0][:, 0]
 
         # mapping to common space
         del text
@@ -377,7 +373,6 @@ class BaseModel(object):
             print(opt.frozen, '--------')
             text_param = []
             bert_name = 'text_bert.text_bert'
-            # layer_list = ['layer.11', 'layer.10', 'layer.9']
             # finetune_layer
             layer_list = opt.layer_list
             print(layer_list)
@@ -660,35 +655,6 @@ class Adversarial(nn.Module):
         return loss
 
 
-
-# class Dual_Encoding(BaseModel):
-#     """
-#     dual encoding network
-#     """
-#     def __init__(self, opt):
-#         # Build Models
-#         self.grad_clip = opt.grad_clip
-#         # self.text_encoding = Text_multilevel_encoding(opt)
-#
-#         self.vid_mapping = Latent_mapping(opt.visual_mapping_layers, opt.dropout, opt.tag_vocab_size)
-#         self.text_mapping = Latent_mapping(opt.text_mapping_layers, opt.dropout, opt.tag_vocab_size)
-#
-#         self.init_info(opt)
-#
-#         # Loss and Optimizer
-#         if opt.loss_fun == 'mrl':
-#             self.criterion = TripletLoss(margin=opt.margin,
-#                                             measure=opt.measure,
-#                                             max_violation=opt.max_violation,
-#                                             cost_style=opt.cost_style,
-#                                             direction=opt.direction)
-#         if opt.optimizer == 'adam':
-#             self.optimizer = torch.optim.Adam(self.params, lr=opt.learning_rate)
-#         elif opt.optimizer == 'rmsprop':
-#             self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
-#
-#         self.Eiters = 0
-    
 class Model(BaseModel):
     """
     dual encoding network

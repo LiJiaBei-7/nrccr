@@ -33,7 +33,6 @@ def parse_args():
     parser.add_argument('--workers', default=5, type=int, help='Number of data loader workers.')
     parser.add_argument('--logger_name', default='runs', help='Path to save the model and Tensorboard log.')
     parser.add_argument('--checkpoint_name', default='model_best.pth.tar', type=str, help='name of checkpoint (default: model_best.pth.tar)')
-    parser.add_argument('--space', default='latent', type=str)
 
     args = parser.parse_args()
     return args
@@ -59,11 +58,7 @@ def main():
     print("=> loaded checkpoint '{}' (epoch {}, best_rsum {})"
           .format(resume, start_epoch, best_rsum))
     options = checkpoint['opt']
-    if opt.space == 'hybrid':
-        options.space = 'hybrid'
-        options.model = 'dual_encoding_hybrid'
 
-    
     # collection setting
     testCollection = opt.testCollection
     collections_pathname = options.collections_pathname
@@ -116,64 +111,23 @@ def main():
     text_data_loader = data.get_txt_data_loader(options, caption_files['test'], caption_files_trans['test'], opt.batch_size, opt.workers, lang_type)
 
     # mapping
-    if options.space == 'hybrid':
-        video_embs, video_ids = evaluation.encode_text_or_vid(model.embed_vis, vid_data_loader)
-        cap_embs, cap_trans_embs, caption_ids = evaluation.encode_text_hybrid(model.embed_txt, text_data_loader)
-    else:
-        video_embs, video_ids = evaluation.encode_text_or_vid(model.embed_vis, vid_data_loader)
-        cap_embs, caption_ids = evaluation.encode_text_or_vid(model.embed_txt, text_data_loader)
+    video_embs, video_ids = evaluation.encode_text_or_vid(model.embed_vis, vid_data_loader)
+    cap_embs, cap_trans_embs, caption_ids = evaluation.encode_text_hybrid(model.embed_txt, text_data_loader)
 
     v2t_gt, t2v_gt = metrics.get_gt(video_ids, caption_ids)
 
     logging.info("write into: %s" % output_dir)
-    # if options.space != 'latent':
-    #     tag_vocab_path = os.path.join(rootpath, collections_pathname['train'], 'TextData', 'tags', 'video_label_th_1', 'tag_vocab_%d.json' % options.tag_vocab_size)
-    #     evaluation.pred_tag(video_tag_probs, video_ids, tag_vocab_path, os.path.join(output_dir, 'video'))
-    #     evaluation.pred_tag(cap_tag_probs, caption_ids, tag_vocab_path, os.path.join(output_dir, 'text'))
-    #
-    if options.space in ['latent', 'hybrid']:
-        # logging.info("=======Latent Space=======")
-        t2v_all_errors_1 = evaluation.cal_error(video_embs, cap_embs, options.measure)
 
-    if options.space in ['concept', 'hybrid']:
-    #     # logging.info("=======Concept Space=======")
-        t2v_all_errors_2 = evaluation.cal_error(video_embs, cap_trans_embs, options.measure)
+    t2v_all_errors_1 = evaluation.cal_error(video_embs, cap_embs, options.measure)
 
+    t2v_all_errors_2 = evaluation.cal_error(video_embs, cap_trans_embs, options.measure)
 
-    if options.space in ['hybrid']:
-        for w in [1.0, 0.8, 0.5, 0.2, 0.0]:
-            print(w, '------')
-            t2v_all_errors_1 = norm_score(t2v_all_errors_1)
-            t2v_all_errors_2 = norm_score(t2v_all_errors_2)
-            t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
-            cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
-
-        # w = 0.8
-        # print(w, '------')
-        # t2v_all_errors_1 = norm_score(t2v_all_errors_1)
-        # t2v_all_errors_2 = norm_score(t2v_all_errors_2)
-        # t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
-        # cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
-        #
-        # w = 0.5
-        # print(w, '------')
-        # t2v_all_errors_1 = norm_score(t2v_all_errors_1)
-        # t2v_all_errors_2 = norm_score(t2v_all_errors_2)
-        # t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
-        # cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
-        #
-        # w = 0.0
-        # print(w, '------')
-        # t2v_all_errors_1 = norm_score(t2v_all_errors_1)
-        # t2v_all_errors_2 = norm_score(t2v_all_errors_2)
-        # t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
-        # cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
-
-    elif options.space in ['latent']:
-        cal_perf(t2v_all_errors_1, v2t_gt, t2v_gt)
-        torch.save({'errors': t2v_all_errors_1, 'videos': video_ids, 'captions': caption_ids}, pred_error_matrix_file)    
-        logging.info("write into: %s" % pred_error_matrix_file)
-
+    for w in [1.0, 0.8, 0.5, 0.2, 0.0]:
+        print(w, '------')
+        t2v_all_errors_1 = norm_score(t2v_all_errors_1)
+        t2v_all_errors_2 = norm_score(t2v_all_errors_2)
+        t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
+        cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
 
 
 if __name__ == '__main__':

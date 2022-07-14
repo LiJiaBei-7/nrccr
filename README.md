@@ -114,7 +114,7 @@ conda activate nrccr_env
 
 # Example:
 # Train NRCCR 
-./do_all_msrvtt.sh $ROOTPATH 0
+./do_all_vatex.sh $ROOTPATH 0
 ```
 
 `<gpu-id>` is the index of the GPU where we train on.
@@ -235,8 +235,9 @@ ROOTPATH=$HOME/VisualSearch/
 
 tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
-./do_test_multi30k.sh $ROOTPATH $MODELDIR <gpu-id>
+./do_test_multi30k.sh $ROOTPATH $MODELDIR $image_path <gpu-id>
 # $MODELDIR is the path of checkpoints, $ROOTPATH/.../runs_0
+# $image_path is the path of the raw images for Flickr30K, if you use the frozen resnet-152, just set the None.
 ```
 
 

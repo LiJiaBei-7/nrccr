@@ -69,7 +69,6 @@ def main():
         sys.exit(0)
     makedirsforfile(os.path.join(opt.logger_name, 'val_metric.txt'))
 
-    # logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
     log_config(opt.logger_name)
     tb_logger.configure(opt.logger_name, flush_secs=5)
     logging.info(json.dumps(vars(opt), indent=2))
@@ -82,7 +81,7 @@ def main():
                         for x in cap_file }
     caption_files_trans = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_trans[x])
                         for x in cap_file_trans }
-
+    # back-translation
     caption_files_back = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_back[x])
                            for x in cap_file_back}
     # Load visual features
@@ -98,8 +97,6 @@ def main():
     opt.text_mapping_layers = list(map(int, opt.text_mapping_layers.split('-')))
     opt.visual_mapping_layers = list(map(int, opt.visual_mapping_layers.split('-')))
     if opt.concate == 'full':
-        # opt.text_mapping_layers[0] = opt.bow_vocab_size + opt.text_rnn_size*2 + opt.text_kernel_num * len(opt.text_kernel_sizes)
-        # opt.text_mapping_layers[0] = 768 + opt.text_rnn_size*2 + opt.text_kernel_num * len(opt.text_kernel_sizes)
         opt.text_mapping_layers[0] = opt.text_hidden_size
         opt.visual_mapping_layers[0] = opt.video_hidden_size
     elif opt.concate == 'reduced':
@@ -138,7 +135,6 @@ def main():
             model.Eiters = checkpoint['Eiters']
             logging.info("=> loaded checkpoint '{}' (epoch {}, best_rsum {})"
                   .format(opt.resume, start_epoch, best_rsum))
-            # validate.validate(opt, tb_logger, data_loaders['val'], model, measure=opt.measure)
         else:
             logging.info("=> no checkpoint found at '{}'".format(opt.resume))
 

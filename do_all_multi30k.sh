@@ -27,7 +27,11 @@ model_type=img
 layer_list=layer.11-layer.10-layer.9-layer.8-layer.7-layer.6-layer.5-layer.4-layer.3
 
 img_path=$3
-img_encoder=clip #resnet_152
+# if you want to use the clip as the backbone
+img_encoder=clip
+# elif you want to use the frozen resnet_152 as the backbone
+#img_encoder=resnet_152
+
 img_encoder_name=ViT-B/32
 img_encoder_input_dim=512
 batch_size=128

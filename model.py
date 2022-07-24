@@ -4,33 +4,214 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from torch.nn.utils.clip_grad import clip_grad_norm_
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 import numpy as np
-from basic.bigfile import BigFile
 from loss import TripletLoss, dtl_feat, DtlLoss
 from transformers import BertModel
 import copy
 from transformer_ori_cross_no_res import BertAttention, TrainablePositionalEncoding, LinearLayer
 
+from adv import Adversarial
 
 
 
 
-def get_we_parameter(vocab, w2v_file):
-    w2v_reader = BigFile(w2v_file)
-    ndims = w2v_reader.ndims
+class video_transformer_encoding(nn.Module):
+    def __init__(self, opt):
+        super(video_transformer_encoding, self).__init__()
+        self.input_drop = 0.1
+        self.max_ctx_l = 80
+        self.num_attention_heads = opt.video_num_attention
+        self.hidden_size = opt.video_hidden_size
 
-    we = []
-    # we.append([0]*ndims)
-    for i in range(len(vocab)):
-        try:
-            vec = w2v_reader.read_one(vocab.idx2word[i])
-        except:
-            vec = np.random.uniform(-1, 1, ndims)
-        we.append(vec)
-    print('getting pre-trained parameter for word embedding initialization', np.shape(we)) 
-    return np.array(we)
+        self.input_proj_layer = LinearLayer(opt.visual_feat_dim, self.hidden_size, layer_norm=True,
+                                            dropout=self.input_drop, relu=True)
+
+        self.pos_embed_layer = TrainablePositionalEncoding(max_position_embeddings=self.max_ctx_l,
+                                                         hidden_size=self.hidden_size, dropout=self.input_drop)
+
+        self.encoder_layers = []
+        self.layer = opt.video_layer
+        self.encoder_layer = BertAttention(opt, self.num_attention_heads, self.hidden_size)
+        for i in range(self.layer-1):
+            self.encoder_layers.append(copy.deepcopy(self.encoder_layer).cuda())
+
+        self.pooling = opt.video_pooling
+
+    def forward(self, videos):
+        videos, videos_origin, lengths, videos_mask = videos
+        feat = self.input_proj_layer(videos)
+        feat = self.pos_embed_layer(feat)
+        mask = videos_mask.unsqueeze(1)  # (N, 1, L), torch.FloatTensor
+        feat = self.encoder_layer(feat, feat, mask, mask).cuda()  # (N, L, D_hidden)
+        for encoder_layer in self.encoder_layers:
+            feat = encoder_layer(feat, feat, mask, mask)
+
+        if self.pooling == 'mean':
+            feat = F.avg_pool1d(feat.permute(0, 2, 1), feat.size(1)).squeeze(2)
+        else:
+            feat = F.max_pool1d(feat.permute(0, 2, 1), feat.size(1)).squeeze(2)
+        return feat
+
+
+# resnet-152
+class image_encoding(nn.Module):
+    def __init__(self, opt):
+        super(image_encoding, self).__init__()
+        self.proj = nn.Linear(opt.visual_feat_dim, opt.visual_feat_dim)
+
+    def forward(self, images):
+        feat = F.relu(self.proj(images))
+        return feat
+
+
+# clip
+import clip
+class image_encoding_clip(nn.Module):
+    def __init__(self, opt):
+        super(image_encoding_clip, self).__init__()
+        self.img_encoder = opt.img_encoder
+        # ['RN50', 'RN101', 'RN50x4', 'RN50x16', 'RN50x64', 'ViT-B/32', 'ViT-B/16', 'ViT-L/14']
+        self.encoder, _ = clip.load(opt.img_encoder_name, device='cuda')
+        self.encoder = self.encoder.float()
+        self.proj = nn.Linear(opt.img_encoder_input_dim, opt.visual_feat_dim)
+
+
+    def forward(self, images):
+        images = self.encoder.encode_image(images)
+        images = torch.tensor(images,dtype=torch.float,requires_grad=True)
+
+        return self.proj(images)
+
+
+
+class Text_bert_encoding(nn.Module):
+    """
+    Section 3.2. Text-side Multi-level Encoding
+    """
+    def __init__(self, opt):
+        super(Text_bert_encoding, self).__init__()
+        self.dropout = nn.Dropout(p=opt.dropout)
+        self.txt_bert_params = {
+            'hidden_dropout_prob': 0.1,
+            'attention_probs_dropout_prob': 0.1,
+        }
+        # txt_bert_config = 'bert-base-cased'
+        # txt_bert_config = 'bert-large-uncased'
+        txt_bert_config = 'bert-base-multilingual-cased'
+
+        self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
+
+
+    def forward(self, text, *args):
+
+        bert_caps, cap_mask = text
+
+        batch_size, max_text_words = bert_caps.size()
+
+        token_type_ids_list = []  # Modality id
+        position_ids_list = []  # Position
+
+
+        ids_size = (batch_size,)
+
+        for pos_id in range(max_text_words):
+            token_type_ids_list.append(torch.full(ids_size, 0, dtype=torch.long))
+            position_ids_list.append(torch.full(ids_size, pos_id, dtype=torch.long))
+
+        token_type_ids = torch.stack(token_type_ids_list, dim=1).cuda()
+        position_ids = torch.stack(position_ids_list, dim=1).cuda()
+        text_bert_output = self.text_bert(bert_caps,
+                                        attention_mask=cap_mask,
+                                        token_type_ids=token_type_ids,
+                                        position_ids=position_ids,
+                                        head_mask=None)
+
+        # mapping to common space
+        del text
+        torch.cuda.empty_cache()
+        return text_bert_output
+
+
+
+class Text_share(nn.Module):
+
+    def __init__(self, opt):
+        super(Text_share, self).__init__()
+        self.max_ctx_l = 250
+        self.bert_out_dim = 768
+        self.input_drop = 0.1
+        self.hidden_size = opt.text_hidden_size
+        self.num_attention_heads = opt.text_num_attention
+        self.input_proj_layer = LinearLayer(self.bert_out_dim, self.hidden_size, layer_norm=True,
+                                            dropout=self.input_drop, relu=True)
+
+        self.pos_embed_layer = TrainablePositionalEncoding(max_position_embeddings=self.max_ctx_l,
+                                                           hidden_size=self.hidden_size, dropout=self.input_drop)
+
+        self.layer = opt.text_layer
+        self.encoder_layer = BertAttention(opt, self.num_attention_heads, self.hidden_size)
+
+        self.text_bert = Text_bert_encoding(opt)
+
+        self.pooling = opt.text_pooling
+
+    def forward(self, texts, reference=False):
+
+        if reference:
+            text, text_trans = texts
+        else:
+            text, text_trans, text_back = texts
+
+
+        bert_caps, lengths, cap_mask = text
+        bert_caps_trans, lengths_trans, cap_mask_trans = text_trans
+
+        # EN
+        bert_out = self.text_bert((bert_caps, cap_mask))
+        bert_seq = bert_out.last_hidden_state
+        feat = self.input_proj_layer(bert_seq)
+        feat = self.pos_embed_layer(feat)
+        mask = cap_mask.unsqueeze(1)
+
+        # trans
+        bert_out_trans = self.text_bert((bert_caps_trans, cap_mask_trans))
+        bert_seq_trans = bert_out_trans.last_hidden_state
+        feat_trans = self.input_proj_layer(bert_seq_trans)
+        feat_trans = self.pos_embed_layer(feat_trans)
+        mask_trans = cap_mask_trans.unsqueeze(1)
+
+        feat_self = self.encoder_layer(feat, feat, mask, mask).cuda()  # (N, L, D_hidden)
+        feat_self_trans = self.encoder_layer(feat_trans, feat_trans, mask_trans, mask_trans).cuda()  # (N, L, D_hidden)
+
+
+        if self.pooling == 'mean':
+            feat_vec = F.avg_pool1d(feat_self.permute(0, 2, 1), feat_self.size(1)).squeeze(2)
+            feat_trans_vec = F.avg_pool1d(feat_self_trans.permute(0, 2, 1), feat_self_trans.size(1)).squeeze(2)
+
+        if reference:
+            return feat_vec, feat_trans_vec
+
+        feat_cross = self.encoder_layer(feat, feat_trans, mask, mask_trans, cross=True)
+        del feat, feat_self, feat_self_trans
+
+        # back
+        bert_caps_back, lengths_back, cap_mask_back = text_back
+        bert_out_back = self.text_bert((bert_caps_back, cap_mask_back))
+        bert_seq_back = bert_out_back.last_hidden_state
+        feat_back = self.input_proj_layer(bert_seq_back)
+        feat_back = self.pos_embed_layer(feat_back)
+        mask_back = cap_mask_back.unsqueeze(1)
+
+        feat_self_back = self.encoder_layer(feat_back, feat_back, mask_back, mask_back)
+
+        if self.pooling == 'mean':
+            feat_cross = torch.cat((feat_cross, feat_trans), 1)
+            feat_cross_vec = F.avg_pool1d(feat_cross.permute(0, 2, 1), feat_cross.size(1)).squeeze(2)
+            feat_back_vec = F.avg_pool1d(feat_self_back.permute(0, 2, 1), feat_self_back.size(1)).squeeze(2)
+
+        return (feat_vec, feat_trans_vec, feat_cross_vec, feat_back_vec), (bert_seq, bert_seq_trans)
+
 
 
 def l2norm(X):
@@ -97,208 +278,6 @@ class MFC(nn.Module):
 
         return features
 
-class video_transformer_encoding(nn.Module):
-    def __init__(self, opt):
-        super(video_transformer_encoding, self).__init__()
-        self.input_drop = 0.1
-        self.max_ctx_l = 80
-        self.num_attention_heads = opt.video_num_attention
-        self.hidden_size = opt.video_hidden_size
-
-        self.input_proj_layer = LinearLayer(opt.visual_feat_dim, self.hidden_size, layer_norm=True,
-                                            dropout=self.input_drop, relu=True)
-
-        self.pos_embed_layer = TrainablePositionalEncoding(max_position_embeddings=self.max_ctx_l,
-                                                         hidden_size=self.hidden_size, dropout=self.input_drop)
-
-        self.encoder_layers = []
-        self.layer = opt.video_layer
-        self.encoder_layer = BertAttention(opt, self.num_attention_heads, self.hidden_size)
-        for i in range(self.layer-1):
-            self.encoder_layers.append(copy.deepcopy(self.encoder_layer).cuda())
-        # self.encoder_layers = nn.ModuleList([copy.deepcopy(self.encoder_layer).cuda() for i in range(self.layer-1)])
-
-        self.pooling = opt.video_pooling
-
-    def forward(self, videos):
-        videos, videos_origin, lengths, videos_mask = videos
-        feat = self.input_proj_layer(videos)
-        feat = self.pos_embed_layer(feat)
-        mask = videos_mask.unsqueeze(1)  # (N, 1, L), torch.FloatTensor
-        feat = self.encoder_layer(feat, feat, mask, mask).cuda()  # (N, L, D_hidden)
-        for encoder_layer in self.encoder_layers:
-            feat = encoder_layer(feat, feat, mask, mask)
-
-        if self.pooling == 'mean':
-            feat = F.avg_pool1d(feat.permute(0, 2, 1), feat.size(1)).squeeze(2)
-        else:
-            feat = F.max_pool1d(feat.permute(0, 2, 1), feat.size(1)).squeeze(2)
-        return feat
-
-
-class image_encoding(nn.Module):
-    def __init__(self, opt):
-        super(image_encoding, self).__init__()
-        self.proj = nn.Linear(opt.visual_feat_dim, opt.visual_feat_dim)
-
-    def forward(self, images):
-        feat = F.relu(self.proj(images))
-        return feat
-
-
-
-import clip
-from torchvision.models import resnet50
-class image_encoding_clip(nn.Module):
-    def __init__(self, opt):
-        super(image_encoding_clip, self).__init__()
-        self.img_encoder = opt.img_encoder
-        # ['RN50', 'RN101', 'RN50x4', 'RN50x16', 'RN50x64', 'ViT-B/32', 'ViT-B/16', 'ViT-L/14']
-        self.encoder, _ = clip.load(opt.img_encoder_name, device='cuda')
-        self.encoder = self.encoder.float()
-        self.proj = nn.Linear(opt.img_encoder_input_dim, opt.visual_feat_dim)
-
-
-    def forward(self, images):
-        # feat = F.relu(self.proj(images))
-        images = self.encoder.encode_image(images)
-        images = torch.tensor(images,dtype=torch.float,requires_grad=True)
-
-        return self.proj(images)
-
-
-
-class Text_bert_encoding(nn.Module):
-    """
-    Section 3.2. Text-side Multi-level Encoding
-    """
-    def __init__(self, opt):
-        super(Text_bert_encoding, self).__init__()
-        self.dropout = nn.Dropout(p=opt.dropout)
-        self.txt_bert_params = {
-            'hidden_dropout_prob': 0.1,
-            'attention_probs_dropout_prob': 0.1,
-        }
-
-        txt_bert_config = 'bert-base-multilingual-cased'
-
-        self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
-        # multi fc layers
-
-
-    def forward(self, text, *args):
-        # Embed word ids to vectors
-        bert_caps, cap_mask = text
-
-        batch_size, max_text_words = bert_caps.size()
-
-        token_type_ids_list = []  # Modality id
-        position_ids_list = []  # Position
-
-
-        ids_size = (batch_size,)
-
-        for pos_id in range(max_text_words):
-            token_type_ids_list.append(torch.full(ids_size, 0, dtype=torch.long))
-            position_ids_list.append(torch.full(ids_size, pos_id, dtype=torch.long))
-
-        token_type_ids = torch.stack(token_type_ids_list, dim=1).cuda()
-        position_ids = torch.stack(position_ids_list, dim=1).cuda()
-        text_bert_output = self.text_bert(bert_caps,
-                                        attention_mask=cap_mask,
-                                        token_type_ids=token_type_ids,
-                                        position_ids=position_ids,
-                                        head_mask=None)
-
-        # mapping to common space
-        del text
-        torch.cuda.empty_cache()
-        return text_bert_output
-
-
-
-class Text_share(nn.Module):
-
-    def __init__(self, opt):
-        super(Text_share, self).__init__()
-        self.max_ctx_l = 250
-        self.bert_out_dim = 768
-        self.input_drop = 0.1
-        self.hidden_size = opt.text_hidden_size
-        self.num_attention_heads = opt.text_num_attention
-        self.input_proj_layer = LinearLayer(self.bert_out_dim, self.hidden_size, layer_norm=True,
-                                            dropout=self.input_drop, relu=True)
-
-        self.pos_embed_layer = TrainablePositionalEncoding(max_position_embeddings=self.max_ctx_l,
-                                                           hidden_size=self.hidden_size, dropout=self.input_drop)
-
-        self.layer = opt.text_layer
-        self.encoder_layer = BertAttention(opt, self.num_attention_heads, self.hidden_size)
-        # self.encoder_layer_trans = BertAttention(opt, self.num_attention_heads, self.hidden_size)
-        # self.cross_layer = BertAttention(opt, self.num_attention_heads, self.hidden_size)
-        # self.encoder_layers = nn.ModuleList([copy.deepcopy(self.encoder_layer) for i in range(self.layer-1)])
-
-        self.text_bert = Text_bert_encoding(opt)
-
-        self.pooling = opt.text_pooling
-
-    def forward(self, texts, reference=False):
-
-        if reference:
-            text, text_trans = texts
-        else:
-            text, text_trans, text_back = texts
-
-
-        bert_caps, lengths, cap_mask = text
-        bert_caps_trans, lengths_trans, cap_mask_trans = text_trans
-
-        # EN
-        bert_out = self.text_bert((bert_caps, cap_mask))
-        bert_seq = bert_out.last_hidden_state
-        feat = self.input_proj_layer(bert_seq)
-        feat = self.pos_embed_layer(feat)
-        mask = cap_mask.unsqueeze(1)
-
-        # trans
-        bert_out_trans = self.text_bert((bert_caps_trans, cap_mask_trans))
-        bert_seq_trans = bert_out_trans.last_hidden_state
-        feat_trans = self.input_proj_layer(bert_seq_trans)
-        feat_trans = self.pos_embed_layer(feat_trans)
-        mask_trans = cap_mask_trans.unsqueeze(1)
-
-        feat_self = self.encoder_layer(feat, feat, mask, mask).cuda()  # (N, L, D_hidden)
-        feat_self_trans = self.encoder_layer(feat_trans, feat_trans, mask_trans, mask_trans).cuda()  # (N, L, D_hidden)
-
-
-        if self.pooling == 'mean':
-            feat_vec = F.avg_pool1d(feat_self.permute(0, 2, 1), feat_self.size(1)).squeeze(2)
-            feat_trans_vec = F.avg_pool1d(feat_self_trans.permute(0, 2, 1), feat_self_trans.size(1)).squeeze(2)
-
-        if reference:
-            return feat_vec, feat_trans_vec
-
-        feat_cross = self.encoder_layer(feat, feat_trans, mask, mask_trans, cross=True)
-        del feat, feat_self, feat_self_trans
-
-        # back
-        bert_caps_back, lengths_back, cap_mask_back = text_back
-        bert_out_back = self.text_bert((bert_caps_back, cap_mask_back))
-        bert_seq_back = bert_out_back.last_hidden_state
-        feat_back = self.input_proj_layer(bert_seq_back)
-        feat_back = self.pos_embed_layer(feat_back)
-        mask_back = cap_mask_back.unsqueeze(1)
-
-        feat_self_back = self.encoder_layer(feat_back, feat_back, mask_back, mask_back)
-
-        if self.pooling == 'mean':
-            feat_cross = torch.cat((feat_cross, feat_trans), 1)
-            feat_cross_vec = F.avg_pool1d(feat_cross.permute(0, 2, 1), feat_cross.size(1)).squeeze(2)
-            feat_back_vec = F.avg_pool1d(feat_self_back.permute(0, 2, 1), feat_self_back.size(1)).squeeze(2)
-
-        return (feat_vec, feat_trans_vec, feat_cross_vec, feat_back_vec), (bert_seq, bert_seq_trans)
-
-
 
 
 class Latent_mapping(nn.Module):
@@ -309,7 +288,6 @@ class Latent_mapping(nn.Module):
         super(Latent_mapping, self).__init__()
         
         self.l2norm = l2norm
-        # visual mapping
         self.mapping = MFC(mapping_layers, dropout, have_bn=True, have_last_bn=True)
 
 
@@ -376,9 +354,7 @@ class BaseModel(object):
             # finetune_layer
             layer_list = opt.layer_list
             print(layer_list)
-            # layer_list = ['layer.11', 'layer.10', 'layer.9', 'layer.8']
             for name, param in self.text_encoding.named_parameters():
-                # print(name)
                 if bert_name in name and not any(layer in name for layer in layer_list):
                     param.requires_grad = False
                 else:
@@ -401,7 +377,6 @@ class BaseModel(object):
         # init params
         params = list(self.vid_encoding.parameters())
         params += text_param
-        # params += list(self.text_encoding.parameters())
         params += list(self.vid_mapping.parameters())
         params += list(self.text_mapping.parameters())
         self.params = params
@@ -415,249 +390,10 @@ class BaseModel(object):
 
 
 
-class Discriminator(nn.Module):
-    def __init__(self,
-                 level,
-                 grad_reverse=False,
-                 scale=1.0):
-        super(Discriminator, self).__init__()
-        # word or sentence
-        self.level = level
-        self.grad_reverse = grad_reverse
-        self.scale = scale
-
-    def count_parameters(self):
-        param_dict = {}
-        for name, param in self.named_parameters():
-            if param.requires_grad:
-                param_dict[name] = np.prod(param.size())
-        return param_dict
-
-    def forward(self, input):
-
-        assert input.dim() == 3
-        # if self.grad_reverse:
-        #     input = grad_reverse(input, self.scale)
-
-        output = self._run_forward_pass(input)
-        if self.level == 'sent':
-            output = torch.mean(output, dim=1)
-        return self.model(output)
-
-
-class LR(Discriminator):
-    """A simple discriminator for adversarial training."""
-
-    def __init__(self, nhid, level, nclass=1, grad_reverse=False, scale=1.0):
-        super(LR, self).__init__(level, grad_reverse, scale)
-
-        self.model = nn.Linear(nhid, nclass)
-
-    def _run_forward_pass(self, input):
-
-        return input
-
-class ResBlock(nn.Module):
-    def __init__(self, nhid):
-        super(ResBlock, self).__init__()
-
-        self.relu = nn.ReLU(True)
-        self.conv1 = nn.Conv1d(nhid, nhid, 5, padding=2)
-        self.conv2 = nn.Conv1d(nhid, nhid, 5, padding=2)
-
-    def forward(self, inputs):
-        """"Defines the forward computation of the discriminator."""
-        assert inputs.dim() == 3
-        output = inputs
-        output = self.relu(output)
-        output = self.conv1(output)
-        output = self.relu(output)
-        output = self.conv2(output)
-        return inputs + (0.3 * output)
-
-
-
-# ref: https://github.com/igul222/improved_wgan_training/blob/master/gan_language.py#L75
-class ConvDiscriminator(Discriminator):
-    def __init__(self,
-                 nhid,
-                 mhid,
-                 level,
-                 nclass=1,
-                 grad_reverse=False,
-                 scale=1.0):
-        super(ConvDiscriminator, self).__init__(level, grad_reverse, scale)
-
-        self.convolve = nn.Sequential(
-            nn.Conv1d(nhid, mhid, 1),
-            ResBlock(mhid),
-            ResBlock(mhid),
-            ResBlock(mhid)
-        )
-        self.model = nn.Linear(mhid, nclass)
-
-    def _run_forward_pass(self, input):
-        """"Defines the forward computation of the discriminator."""
-        output = input.transpose(1, 2)
-        output = self.convolve(output)
-        output = output.transpose(1, 2)
-        return output
-
-
-class MLP(Discriminator):
-    """A simple discriminator for adversarial training."""
-
-    def __init__(self,
-                 nhid,
-                 level,
-                 nclass=1,
-                 grad_reverse=False,
-                 scale=1.0):
-        super(MLP, self).__init__(level, grad_reverse, scale)
-
-        self.model = nn.Sequential(
-            nn.Linear(nhid, 256),
-            nn.Tanh(),
-            nn.Linear(256, 128),
-            nn.Tanh(),
-            nn.Linear(128, nclass)
-        )
-
-    def _run_forward_pass(self, input):
-        return input
-
-
-class Adversarial(nn.Module):
-    def __init__(self, opt, input_size, train_level, nclass, train_type, momentum, gamma, eps, betas, lr, reverse_grad, scale, optim, disc_type):
-        super(Adversarial, self).__init__()
-
-        self.train_type = train_type
-        self.reverse_grad = reverse_grad
-        self.scale = scale
-
-        # 最后的输出维度为1
-        if disc_type == 'weak':
-            self.discriminator = LR(input_size, level=train_level, nclass=nclass, grad_reverse=reverse_grad, scale=scale)
-        elif disc_type == 'not-so-weak':
-            self.discriminator = MLP(input_size, level=train_level, nclass=nclass)
-        elif disc_type == 'strong':
-            self.discriminator = ConvDiscriminator(input_size, mhid=128, level=train_level, nclass=nclass)
-
-        self.optim = self.generate_optimizer(optim, lr, self.discriminator.parameters(),
-                                        betas, gamma, eps, momentum)
-
-        self.criterion = nn.CrossEntropyLoss() if self.train_type == 'GR' else nn.BCEWithLogitsLoss()
-
-        # real--EN/ fake--trans
-        self.real = 1
-        self.fake = 0
-
-        self.train_type = train_type
-
-    def generate_optimizer(self, optim, lr, params, betas, gamma, eps, momentum):
-
-        params = filter(lambda param: param.requires_grad, params)
-
-        from torch.optim import Adam, SGD, Adamax
-
-        if optim == 'adam':
-            return Adam(params, lr=lr, betas=betas, weight_decay=gamma, eps=eps)
-        elif optim == 'sgd':
-            return SGD(params, lr=lr, momentum=momentum, weight_decay=gamma, nesterov=True)
-        elif optim == 'adamax':
-            return Adamax(params, lr=lr, betas=betas, weight_decay=gamma, eps=eps)
-        else:
-            raise ValueError('Unknown optimization algorithm: %s' % optim)
-
-    def loss(self, input, label):
-
-        output = self.discriminator(input)
-
-        if output.dim() == 3:
-            output = output.contiguous().view(-1, output.size(2))
-
-        if self.train_type == 'WGAN':
-            loss = torch.mean(output)
-
-        else:
-            if self.train_type == 'GAN':
-                labels = torch.empty(*output.size()).fill_(label).type_as(output)
-            elif self.train_type == 'GR':
-                labels = torch.empty(output.size(0)).fill_(label).type_as(output).long()
-            loss = self.criterion(output, labels)
-
-        return output, loss
-
-    def accuracy(self, output, label):
-
-        preds = output.max(1)[1].cpu()
-
-        labels = torch.LongTensor([label])
-        labels = labels.expand(*preds.size())
-        n_correct = preds.eq(labels).sum().item()
-        acc = 1.0 * n_correct / output.size(0)
-
-        return acc
-
-    def update(self, real_in, fake_in, real_id, fake_id):
-        self.optim.zero_grad()
-
-        if self.train_type == 'GAN':
-            real_id, fake_id = self.real, self.fake
-
-        real_out, real_loss = self.loss(real_in, real_id)
-        fake_out, fake_loss = self.loss(fake_in, fake_id)
-
-        if self.train_type in ['GR', 'GAN']:
-            loss = 0.5 * (real_loss + fake_loss)
-        else:
-            loss = fake_loss - real_loss
-
-        # Note: usually gradient clipping is not required
-        # clip_grad_norm_(self.discriminator.parameters(), self.clip_disc)
-        loss.backward()
-        self.optim.step()
-
-        real_acc, fake_acc = 0, 0
-        if self.train_type in ['GR', 'GAN']:
-            real_acc = self.accuracy(real_out, real_id)
-            fake_acc = self.accuracy(fake_out, fake_id)
-
-        return real_loss.item(), fake_loss.item(), real_acc, fake_acc
-
-    def gen_loss(self, real_in, fake_in, real_id, fake_id):
-        """Function to calculate loss to update the Generator in adversarial training."""
-
-        if self.train_type == 'GR':
-            _, real_loss = self.loss(real_in, real_id)
-            _, fake_loss = self.loss(fake_in, fake_id)
-            loss = 0.5 * (real_loss + fake_loss)
-            if not self.reverse_grad:
-                loss = -self.scale * loss
-
-        elif self.train_type == 'GAN':
-            _, loss = self.loss(fake_in, self.real)
-            loss = self.scale * loss
-            # _, loss = self.loss(real_in, self.real)
-            # loss = -self.scale * loss
-
-        # ref: https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan/wgan.py
-        elif self.train_type == 'WGAN':
-            for p in self.discriminator.parameters():
-                p.data.clamp_(-0.01, 0.01)
-
-            _, loss = self.loss(fake_in, self.real)
-            loss = -self.scale * loss
-
-        else:
-            raise NotImplementedError()
-
-        return loss
-
 
 class Model(BaseModel):
     """
-    dual encoding network
+    NRCCR network
     """
 
     def __init__(self, opt):
@@ -667,11 +403,14 @@ class Model(BaseModel):
 
         if self.model_type == 'img':
             if opt.img_encoder == 'clip':
+                # clip
                 self.vid_encoding = image_encoding_clip(opt)
             else:
+                # ResNet-152
                 self.vid_encoding = image_encoding(opt)
         else:
             self.vid_encoding = video_transformer_encoding(opt)
+
         self.text_encoding = Text_share(opt)
 
         kwargs = {'opt': opt, 'input_size': opt.text_hidden_size,
@@ -705,7 +444,9 @@ class Model(BaseModel):
         elif opt.optimizer == 'rmsprop':
             self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
 
+        # feat-view
         self.dtl_feat = dtl_feat()
+        # sim-view
         self.dtl_criterion = DtlLoss()
 
         self.tri_alpha = opt.tri_alpha
@@ -713,9 +454,7 @@ class Model(BaseModel):
         self.l1_gama = opt.l1_gama
         self.back_w = opt.back_w
 
-
         self.Eiters = 0
-        self.space = opt.space
 
     def parallel(self):
         self.vid_encoding = nn.parallel.DataParallel(self.vid_encoding)
@@ -926,7 +665,7 @@ class Model(BaseModel):
         return vid_emb.size(0), loss_value, real_acc, feak_acc, real_loss, fake_loss, others_loss
 
 
-NAME_TO_MODELS = {'rivrl': Model}
+NAME_TO_MODELS = {'nrccr': Model}
 
 def get_model(name):
     assert name in NAME_TO_MODELS, '%s not supported.'%name

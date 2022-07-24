@@ -11,14 +11,15 @@ from model import get_model
 from validate import norm_score, cal_perf
 
 import util.tag_data_provider as data
-from util.text2vec import get_text_encoder
 import util.metrics as metrics
-from util.vocab import Vocabulary
 
 from basic.util import read_dict, log_config
 from basic.constant import ROOT_PATH
 from basic.bigfile import BigFile
 from basic.common import makedirsforfile, checkToSkip
+
+from test_base import test
+
 
 def parse_args():
     # Hyper Parameters
@@ -33,6 +34,7 @@ def parse_args():
     parser.add_argument('--workers', default=5, type=int, help='Number of data loader workers.')
     parser.add_argument('--logger_name', default='runs', help='Path to save the model and Tensorboard log.')
     parser.add_argument('--checkpoint_name', default='model_best.pth.tar', type=str, help='name of checkpoint (default: model_best.pth.tar)')
+    parser.add_argument('--space', default='latent', type=str)
 
     args = parser.parse_args()
     return args
@@ -58,7 +60,11 @@ def main():
     print("=> loaded checkpoint '{}' (epoch {}, best_rsum {})"
           .format(resume, start_epoch, best_rsum))
     options = checkpoint['opt']
+    if opt.space == 'hybrid':
+        options.space = 'hybrid'
+        options.model = 'dual_encoding_hybrid'
 
+    
     # collection setting
     testCollection = opt.testCollection
     collections_pathname = options.collections_pathname
@@ -110,24 +116,8 @@ def main():
     vid_data_loader = data.get_vis_data_loader(visual_feats['test'], opt.batch_size, opt.workers, video2frames['test'], video_ids=video_ids_list)
     text_data_loader = data.get_txt_data_loader(options, caption_files['test'], caption_files_trans['test'], opt.batch_size, opt.workers, lang_type)
 
-    # mapping
-    video_embs, video_ids = evaluation.encode_text_or_vid(model.embed_vis, vid_data_loader)
-    cap_embs, cap_trans_embs, caption_ids = evaluation.encode_text_hybrid(model.embed_txt, text_data_loader)
-
-    v2t_gt, t2v_gt = metrics.get_gt(video_ids, caption_ids)
-
-    logging.info("write into: %s" % output_dir)
-
-    t2v_all_errors_1 = evaluation.cal_error(video_embs, cap_embs, options.measure)
-
-    t2v_all_errors_2 = evaluation.cal_error(video_embs, cap_trans_embs, options.measure)
-
-    for w in [1.0, 0.8, 0.5, 0.2, 0.0]:
-        print(w, '------')
-        t2v_all_errors_1 = norm_score(t2v_all_errors_1)
-        t2v_all_errors_2 = norm_score(t2v_all_errors_2)
-        t2v_tag_all_errors = w * t2v_all_errors_1 + (1 - w) * t2v_all_errors_2
-        cal_perf(t2v_tag_all_errors, v2t_gt, t2v_gt)
+    test(options, model, vid_data_loader, text_data_loader, evaluation, metrics, logging, output_dir, norm_score,
+         cal_perf, pred_error_matrix_file)
 
 
 if __name__ == '__main__':

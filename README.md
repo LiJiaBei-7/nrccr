@@ -276,9 +276,9 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 If you find the package useful, please consider citing our paper:
 
 ```
-@article{wang2022cross,
+@inproceedings{wang2022cross,
   title={Cross-Lingual Cross-Modal Retrieval with Noise-Robust Learning},
-  author={Wang, Yabing and Dong, Jianfeng and Liang, Tianxiang and Zhang, Minsong and Cai, Rui and Wang, Xun},
+  author={Yabing Wang and Jianfeng Dong and Tianxiang Liang and Minsong Zhang and Rui Cai and Xun Wang},
   journal={In Proceedings of the 30th ACM international conference on Multimedia},
   year={2022}
 }

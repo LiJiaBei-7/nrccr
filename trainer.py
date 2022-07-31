@@ -19,22 +19,8 @@ from train_base import parse_args, get_caption_file, process
 
 
 def main():
-    opt = parse_args()
 
-    rootpath = opt.rootpath
-    collectionStrt = opt.collectionStrt
-    collection = opt.collection
-
-    if collectionStrt == 'single': # train,val data are in one directory
-        opt.trainCollection = '%strain' % collection
-        opt.valCollection = '%sval' % collection
-        opt.testCollection = '%stest' % collection
-        collections_pathname = {'train': collection, 'val': collection, 'test': collection}
-    elif collectionStrt == 'multiple': # train,val data are separated in multiple directories
-        collections_pathname = {'train': opt.trainCollection, 'val': opt.valCollection, 'test': opt.testCollection}
-    else:
-        raise NotImplementedError('collection structure %s not implemented' % collectionStrt)
-
+    opt, rootpath, collectionStrt, collection, collections_pathname = parse_args()
 
     cap_file = {'train': '%s.caption.txt' % opt.trainCollection,
                 'val': '%s_%s_zh2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0])}
@@ -89,8 +75,6 @@ def main():
     opt.visual_mapping_layers = list(map(int, opt.visual_mapping_layers.split('-')))
     opt.text_mapping_layers[0] = opt.text_hidden_size
     opt.visual_mapping_layers[0] = opt.video_hidden_size
-
-
 
     # set data loader
     video2frames = {x: read_dict(os.path.join(rootpath, collections_pathname[x], 'FeatureData', opt.visual_feature, 'video2frames.txt'))

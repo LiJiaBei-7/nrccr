@@ -17,21 +17,8 @@ from train_base import parse_args, get_caption_file, process
 
 
 def main():
-    opt = parse_args()
 
-    rootpath = opt.rootpath
-    collectionStrt = opt.collectionStrt
-    collection = opt.collection
-
-    if collectionStrt == 'single': # train,val data are in one directory
-        opt.trainCollection = '%strain' % collection
-        opt.valCollection = '%sval' % collection
-        opt.testCollection = '%stest' % collection
-        collections_pathname = {'train': collection, 'val': collection, 'test': collection}
-    elif collectionStrt == 'multiple': # train,val data are separated in multiple directories
-        collections_pathname = {'train': opt.trainCollection, 'val': opt.valCollection, 'test': opt.testCollection}
-    else:
-        raise NotImplementedError('collection structure %s not implemented' % collectionStrt)
+    opt, rootpath, collectionStrt, collection, collections_pathname = parse_args()
 
 
     cap_file = {'train': '%s_en.caption.txt' % opt.trainCollection,

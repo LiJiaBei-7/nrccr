@@ -88,7 +88,7 @@ def main():
     # Construct the model
     model = get_model(opt.model)(opt)
 
-    striptStr = ''.join(open('util/TEMPLATE_do_test.sh').readlines())
+    striptStr = ''.join(open('util/TEMPLATE_do_test_vid.sh').readlines())
     striptStr = striptStr.replace('@@@rootpath@@@', rootpath)
     striptStr = striptStr.replace('@@@collectionStrt@@@', collectionStrt)
     striptStr = striptStr.replace('@@@testCollection@@@', collections_pathname['test'])

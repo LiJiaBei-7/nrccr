@@ -35,7 +35,7 @@ framework=all_Full_vatex_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_b
 
 # training
 gpu=$2
-CUDA_VISIBLE_DEVICES=$gpu python trainer.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
+CUDA_VISIBLE_DEVICES=$gpu python trainer_vid.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
                                             --collection $collection --visual_feature $visual_feature --space $space\
                                             --framework $framework --learning_rate $learning_rate --frozen $frozen\
                                             --text_hidden_size $text_hidden_size --text_num_attention $text_num_attention\

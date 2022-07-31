@@ -6,5 +6,5 @@ overwrite=0
 
 gpu=$3
 
-CUDA_VISIBLE_DEVICES=$gpu python tester.py --collectionStrt $collectionStrt --testCollection $testCollection --rootpath $rootpath --overwrite $overwrite --logger_name $logger_name
+CUDA_VISIBLE_DEVICES=$gpu python tester_img.py --collectionStrt $collectionStrt --testCollection $testCollection --rootpath $rootpath --overwrite $overwrite --logger_name $logger_name
 

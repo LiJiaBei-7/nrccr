@@ -1,10 +1,9 @@
-rootpath=$1
-collectionStrt=single
-testCollection=vatex
-logger_name=$2
-overwrite=0
+rootpath=@@@rootpath@@@
+collectionStrt=@@@collectionStrt@@@
+testCollection=@@@testCollection@@@
+logger_name=@@@logger_name@@@
+overwrite=@@@overwrite@@@
 
-gpu=$3
+gpu=0
 
 CUDA_VISIBLE_DEVICES=$gpu python tester_vid.py --collectionStrt $collectionStrt --testCollection $testCollection --rootpath $rootpath --overwrite $overwrite --logger_name $logger_name
-

@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import torch
 import logging
 
 import validate
@@ -12,14 +11,13 @@ import util.tag_data_provider_img as data
 
 from basic.common import makedirsforfile, checkToSkip
 from basic.util import log_config
-from train_base import parse_args, get_caption_file, process
+from train_base import preprocess, get_caption_file, process
 
 
 
 def main():
 
-    opt, rootpath, collectionStrt, collection, collections_pathname = parse_args()
-
+    opt, rootpath, collectionStrt, collection, collections_pathname = preprocess()
 
     cap_file = {'train': '%s_en.caption.txt' % opt.trainCollection,
                 'val': '%s_google_%s2enc.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}
@@ -33,9 +31,8 @@ def main():
     opt.collections_pathname = collections_pathname
     opt.cap_file = cap_file
 
-    if opt.loss_fun == "mrl" and opt.measure == "cosine":
-        assert opt.text_norm is True
-        assert opt.visual_norm is True
+    assert opt.text_norm is True
+    assert opt.visual_norm is True
 
     # checkpoint path
     opt.logger_name = os.path.join(rootpath, collections_pathname['train'], opt.cv_name, collections_pathname['val'], opt.framework, opt.postfix)
@@ -67,9 +64,6 @@ def main():
     import numpy as np
     visual_feats = {x: np.load(visual_feat_path[x], encoding="latin1") for x in visual_feat_path}   #class 'numpy.ndarray'
     opt.visual_feat_dim = visual_feats['train'].shape[-1] # 2048
-
-    # initialize word embedding
-    opt.we_parameter = None
 
     # mapping layer structure
     opt.text_mapping_layers = list(map(int, opt.text_mapping_layers.split('-')))

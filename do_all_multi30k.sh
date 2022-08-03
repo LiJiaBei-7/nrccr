@@ -2,7 +2,6 @@ rootpath=$1
 overwrite=1
 collection=multi30k
 visual_feature=resnet_152
-space=hybrid
 learning_rate=1e-4
 text_hidden_size=768
 video_hidden_size=1024
@@ -16,7 +15,7 @@ frozen=frozen
 data_type=google_enc2cs # google_enc2de # google_enc2fr
 glr=1e-3
 scale=0.001
-disc_type=strong #not-so-weak
+disc_type=strong #not-so-weak #weak
 momentum=0.8
 optim=adam
 tri_alpha=0.6
@@ -26,7 +25,9 @@ back_w=0.5
 model_type=img
 layer_list=layer.11-layer.10-layer.9-layer.8-layer.7-layer.6-layer.5-layer.4-layer.3
 
-img_path=$3
+# if you don't use the clip, just set it to None
+img_path=$2
+
 # if you want to use the clip as the backbone
 img_encoder=clip
 # elif you want to use the frozen resnet_152 as the backbone
@@ -40,10 +41,10 @@ framework=Full_multi30k_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_be
 /layer_list_$layer_list/glr_$glr/scale_$scale/disc_type_$disc_type/momentum_$momentum/optim_$optim/img_encoder_$img_encoder
 
 # training
-gpu=$2
+gpu=$3
 
 CUDA_VISIBLE_DEVICES=$gpu python trainer_img.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
-                                            --collection $collection --visual_feature $visual_feature --space $space\
+                                            --collection $collection --visual_feature $visual_feature\
                                             --framework $framework --learning_rate $learning_rate --frozen $frozen\
                                             --text_hidden_size $text_hidden_size --text_num_attention $text_num_attention\
                                             --video_hidden_size $video_hidden_size --video_num_attention $video_num_attention\

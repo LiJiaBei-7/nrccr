@@ -435,18 +435,11 @@ class Model(BaseModel):
         self.init_info(opt)
 
         # Loss and Optimizer
-        if opt.loss_fun == 'mrl':
-            self.criterion = TripletLoss(margin=opt.margin,
+        self.criterion = TripletLoss(margin=opt.margin,
                                          measure=opt.measure,
                                          max_violation=opt.max_violation,
                                          cost_style=opt.cost_style,
                                          direction=opt.direction)
-
-        if opt.optimizer == 'adam':
-            self.optimizer = torch.optim.Adam(self.params, lr=opt.learning_rate)
-        elif opt.optimizer == 'rmsprop':
-            self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
-
         # feat-view
         self.dtl_feat = dtl_feat()
         # sim-view
@@ -458,6 +451,12 @@ class Model(BaseModel):
         self.back_w = opt.back_w
 
         self.Eiters = 0
+
+        if opt.optimizer == 'adam':
+            self.optimizer = torch.optim.Adam(self.params, lr=opt.learning_rate)
+        elif opt.optimizer == 'rmsprop':
+            self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
+
 
     def parallel(self):
         self.vid_encoding = nn.parallel.DataParallel(self.vid_encoding)

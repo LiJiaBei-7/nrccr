@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import torch
 import logging
 
 import validate
@@ -14,13 +13,13 @@ from basic.bigfile import BigFile
 from basic.common import makedirsforfile, checkToSkip
 from basic.util import read_dict, log_config
 
-from train_base import parse_args, get_caption_file, process
+from train_base import preprocess, get_caption_file, process
 
 
 
 def main():
 
-    opt, rootpath, collectionStrt, collection, collections_pathname = parse_args()
+    opt, rootpath, collectionStrt, collection, collections_pathname = preprocess()
 
     cap_file = {'train': '%s.caption.txt' % opt.trainCollection,
                 'val': '%s_%s_zh2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0])}
@@ -34,9 +33,8 @@ def main():
     opt.collections_pathname = collections_pathname
     opt.cap_file = cap_file
 
-    if opt.loss_fun == "mrl" and opt.measure == "cosine":
-        assert opt.text_norm is True
-        assert opt.visual_norm is True
+    assert opt.text_norm is True
+    assert opt.visual_norm is True
 
     framework = opt.framework
 
@@ -49,7 +47,6 @@ def main():
         sys.exit(0)
     makedirsforfile(os.path.join(opt.logger_name, 'val_metric.txt'))
 
-    # logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
     log_config(opt.logger_name)
     tb_logger.configure(opt.logger_name, flush_secs=5)
     logging.info(json.dumps(vars(opt), indent=2))
@@ -66,9 +63,6 @@ def main():
 
     visual_feats = {x: BigFile(visual_feat_path[x]) for x in visual_feat_path}
     opt.visual_feat_dim = visual_feats['train'].ndims
-
-    # initialize word embedding
-    opt.we_parameter = None
 
     # mapping layer structure
     opt.text_mapping_layers = list(map(int, opt.text_mapping_layers.split('-')))

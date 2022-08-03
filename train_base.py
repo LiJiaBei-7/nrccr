@@ -12,28 +12,32 @@ from basic.generic_utils import Progbar
 
 
 
+
 def parse_args():
     # Hyper Parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--rootpath', type=str, default=ROOT_PATH,
-                        help='path to datasets. (default: %s)'%ROOT_PATH)
+                        help='path to datasets. (default: %s)' % ROOT_PATH)
     parser.add_argument('--collectionStrt', type=str, default='single', help='collection structure (single|multiple)')
-    parser.add_argument('--collection', type=str,  help='dataset name')
+    parser.add_argument('--collection', type=str, help='dataset name')
     parser.add_argument('--trainCollection', type=str, help='train collection')
-    parser.add_argument('--valCollection', type=str,  help='validation collection')
-    parser.add_argument('--testCollection', type=str,  help='test collection')
-    parser.add_argument('--overwrite', type=int, default=0, choices=[0,1], help='overwrite existed file. (default: 0)')
+    parser.add_argument('--valCollection', type=str, help='validation collection')
+    parser.add_argument('--testCollection', type=str, help='test collection')
+    parser.add_argument('--overwrite', type=int, default=0, choices=[0, 1], help='overwrite existed file. (default: 0)')
     # model
     parser.add_argument('--model', type=str, default='nrccr', help='model name. (default: dual_encoding)')
     parser.add_argument('--measure', type=str, default='cosine', help='measure method. (default: cosine)')
     parser.add_argument('--measure_2', type=str, default='jaccard', help='measure method. (default: cosine)')
     parser.add_argument('--dropout', type=float, default=0.2, help='dropout rate (default: 0.2)')
     parser.add_argument('--text_norm', action='store_true', help='normalize the text embeddings at last layer')
-    parser.add_argument('--visual_feature', type=str, default='resnet-152-img1k-flatten0_outputos', help='visual feature.')
+    parser.add_argument('--visual_feature', type=str, default='resnet-152-img1k-flatten0_outputos',
+                        help='visual feature.')
     parser.add_argument('--visual_norm', action='store_true', help='normalize the visual embeddings at last layer')
     # common space learning
-    parser.add_argument('--text_mapping_layers', type=str, default='0-1536', help='text fully connected layers for common space learning. (default: 0-2048)')
-    parser.add_argument('--visual_mapping_layers', type=str, default='0-1536', help='visual fully connected layers  for common space learning. (default: 0-2048)')
+    parser.add_argument('--text_mapping_layers', type=str, default='0-1536',
+                        help='text fully connected layers for common space learning. (default: 0-2048)')
+    parser.add_argument('--visual_mapping_layers', type=str, default='0-1536',
+                        help='visual fully connected layers  for common space learning. (default: 0-2048)')
     # loss
     parser.add_argument('--margin', type=float, default=0.2, help='rank loss margin')
     parser.add_argument('--direction', type=str, default='all', help='retrieval direction (all|t2v|v2t)')
@@ -44,8 +48,10 @@ def parse_args():
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='initial learning rate')
     parser.add_argument('--lr_decay_rate', type=float, default=0.99, help='learning rate decay rate. (default: 0.99)')
     parser.add_argument('--grad_clip', type=float, default=2, help='gradient clipping threshold')
-    parser.add_argument('--resume', type=str, default='', metavar='PATH', help='path to latest checkpoint (default: none)')
-    parser.add_argument('--val_metric', type=str, default='recall', help='performance metric for validation (mir|recall)')
+    parser.add_argument('--resume', type=str, default='', metavar='PATH',
+                        help='path to latest checkpoint (default: none)')
+    parser.add_argument('--val_metric', type=str, default='recall',
+                        help='performance metric for validation (mir|recall)')
 
     parser.add_argument('--num_epochs', type=int, default=50, help='Number of training epochs.')
     parser.add_argument('--batch_size', type=int, default=128, help='Size of a training mini-batch.')
@@ -76,10 +82,10 @@ def parse_args():
     parser.add_argument('--momentum', type=float)
     parser.add_argument('--optim', type=str, default='adam', help='adam | sgd | ')
     # loss weight
-    parser.add_argument('--tri_alpha', type=float, default=0.6,)
-    parser.add_argument('--dtl_beta', type=float, default=0.4,)
-    parser.add_argument('--l1_gama', type=float, default=1,)
-    parser.add_argument('--back_w', type=float, default=1,)
+    parser.add_argument('--tri_alpha', type=float, default=0.6, )
+    parser.add_argument('--dtl_beta', type=float, default=0.4, )
+    parser.add_argument('--l1_gama', type=float, default=1, )
+    parser.add_argument('--back_w', type=float, default=1, )
 
     # model_type
     parser.add_argument('--model_type', type=str, default='video', help='video | img | ')
@@ -88,12 +94,14 @@ def parse_args():
     parser.add_argument('--img_path', type=str)
     parser.add_argument('--img_encoder', type=str, default='clip', help='clip | resnet152 | ')
     parser.add_argument('--img_encoder_name', type=str)
-    parser.add_argument('--img_encoder_input_dim', type=int,default=512)
+    parser.add_argument('--img_encoder_input_dim', type=int, default=512)
 
     args = parser.parse_args()
+    return args
 
+
+def preprocess():
     opt = parse_args()
-
     rootpath = opt.rootpath
     collectionStrt = opt.collectionStrt
     collection = opt.collection

@@ -96,8 +96,6 @@ class Text_bert_encoding(nn.Module):
             'hidden_dropout_prob': 0.1,
             'attention_probs_dropout_prob': 0.1,
         }
-        # txt_bert_config = 'bert-base-cased'
-        # txt_bert_config = 'bert-large-uncased'
         txt_bert_config = 'bert-base-multilingual-cased'
 
         self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
@@ -401,6 +399,7 @@ class Model(BaseModel):
         self.grad_clip = opt.grad_clip
         self.model_type = opt.model_type
 
+        # image encoding
         if self.model_type == 'img':
             if opt.img_encoder == 'clip':
                 # clip
@@ -408,9 +407,11 @@ class Model(BaseModel):
             else:
                 # ResNet-152
                 self.vid_encoding = image_encoding(opt)
+        # video encoding
         else:
             self.vid_encoding = video_transformer_encoding(opt)
 
+        # text encoding
         self.text_encoding = Text_share(opt)
 
         kwargs = {'opt': opt, 'input_size': opt.text_hidden_size,
@@ -418,6 +419,8 @@ class Model(BaseModel):
                   'reverse_grad': False, 'nclass': 2, 'scale': opt.scale,
                   'optim': 'adam', 'lr': opt.glr, 'betas': (0.9, 0.999), 'gamma': 0, 'eps': 1e-8,
                   'momentum': opt.momentum, 'disc_type': opt.disc_type}
+
+        # lang-agnostic learning
         self.AdvAgent = Adversarial(**kwargs)
 
         if torch.cuda.is_available():
@@ -465,12 +468,16 @@ class Model(BaseModel):
         """
         cap_emb, cap_emb_trans, cap_emb_cross, cap_emb_back = cap_embs
         cap_bert_emb, cap_bert_emb_trans = cap_bert_embs
+        # source-video-triplet
         loss_tri = self.criterion(cap_emb, vid_emb)
+        # target(translation)-video-triplet
         loss_tri_trans = self.criterion(cap_emb_trans, vid_emb) * self.tri_alpha
 
-        # loss_mul = self.nce_criterion(cap_emb_back, cap_emb_trans)
+        # sim-based distillation
         loss_dtl = self.dtl_criterion(cap_emb_cross.detach(), cap_emb_trans, vid_emb) * self.dtl_beta
+        # feat-based distillation
         loss_feat = self.dtl_feat(cap_emb_cross, cap_emb_trans) * self.l1_gama
+        # cycle consistent
         loss_contrastive = self.criterion(cap_emb, cap_emb_back) * self.back_w
 
         real_idx = 1
@@ -482,6 +489,7 @@ class Model(BaseModel):
         # update encoder
         others_loss = self.AdvAgent.gen_loss(cap_bert_emb, cap_bert_emb_trans, real_idx, fake_idx)
 
+        # all
         loss = loss_tri + loss_tri_trans + loss_dtl + loss_contrastive + others_loss + loss_feat
 
         self.logger.update('Le', loss.item(), vid_emb.size(0))

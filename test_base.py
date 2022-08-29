@@ -68,7 +68,7 @@ def process(opt, ):
     log_config(output_dir)
     logging.info(json.dumps(vars(opt), indent=2))
 
-    return rootpath, collectionStrt, collections_pathname, options, checkpoint, testCollection,
+    return rootpath, collectionStrt, collections_pathname, options, checkpoint, testCollection, output_dir, pred_error_matrix_file
 
 
 def test(options, model, vid_data_loader, text_data_loader, evaluation, metrics, logging, output_dir, norm_score, cal_perf, pred_error_matrix_file):

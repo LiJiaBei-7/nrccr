@@ -147,10 +147,11 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
     <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
   </tr>
   <tr align="center">
-    <td>en2cn</td><td>30.4</td><td>64.3</td><td>74.7</td><td>3.0</td><td>45.51</td>
-    <td>44.0</td><td>71.9</td><td>80.3</td><td>2.0</td><td>32.72</td><td>365.5</td>
+    <td>en2cn</td><td>30.8</td><td>64.4</td><td>74.6</td><td>3.0</td><td>45.78</td>
+    <td>43.1</td><td>72.3</td><td>81.4</td><td>2.0</td><td>32.57</td><td>366.5</td>
   </tr>
 </table>
+
 
 
 

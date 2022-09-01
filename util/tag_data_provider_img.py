@@ -1,9 +1,13 @@
+import json
 import torch
 import torch.utils.data as data
+import numpy as np
 
 from basic.util import getVideoId
+from util.vocab import clean_str,clean_str_cased
 
 from transformers import BertTokenizer
+
 
 from PIL import Image
 import clip
@@ -28,9 +32,38 @@ def create_tokenizer():
                                                 cache_dir=cache_dir)
     return tokenizer
 
-def tokenize_caption(tokenizer, raw_caption):
+def tokenize_caption(tokenizer, raw_caption, cap_id, special_tokens=True, type='ZH'):
+    # print(type, '--------')
 
-    ids = tokenizer.encode(raw_caption, add_special_tokens=True)
+    if(type == 'EN'):
+        word_list = clean_str_cased(raw_caption)
+        txt_caption = " ".join(word_list)
+        # Remove whitespace at beginning and end of the sentence.
+        txt_caption = txt_caption.strip()
+        # Add period at the end of the sentence if not already there.
+        try:
+            if txt_caption[-1] not in [".", "?", "!"]:
+                txt_caption += "."
+        except:
+            print(cap_id)
+        txt_caption = txt_caption.capitalize()
+        # tokens = tokenizer.tokenize(txt_caption)
+        # if special_tokens:
+        #     cls = [tokenizer.cls_token]
+        #     sep = [tokenizer.sep_token]  # [SEP] token
+        # tokens = cls + tokens + sep
+        # # tokens = tokens[:self.max_text_words]
+        # # Make sure that the last token is
+        # # the [SEP] token
+        # if special_tokens:
+        #     tokens[-1] = tokenizer.sep_token
+        #
+        # ids = tokenizer.convert_tokens_to_ids(tokens)
+
+        ids = tokenizer.encode(txt_caption, add_special_tokens=True)
+
+    else:
+        ids = tokenizer.encode(raw_caption, add_special_tokens=True)
 
     return ids
 
@@ -264,15 +297,15 @@ class Dataset4DualEncoding(data.Dataset):
 
         # BERT
         caption = self.captions[cap_id]
-        bert_ids = tokenize_caption(self.tokenizer, caption)
+        bert_ids = tokenize_caption(self.tokenizer, caption, cap_id, type='EN')
         bert_tensor = torch.Tensor(bert_ids)
         # trans
         caption_trans = self.captions_trans[cap_id_trans]
-        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans)
+        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans, cap_id_trans, type='ZH')
         bert_tensor_trans = torch.Tensor(bert_ids_trans)
         # back
         caption_back = self.captions_back[cap_id_back]
-        bert_ids_back = tokenize_caption(self.tokenizer, caption_back)
+        bert_ids_back = tokenize_caption(self.tokenizer, caption_back, cap_id_trans, type='ZH')
         bert_tensor_back = torch.Tensor(bert_ids_back)
 
         # BERT
@@ -287,12 +320,12 @@ class VisDataSet4DualEncoding(data.Dataset):
     Load video frame features by pre-trained CNN model.
     """
     def __init__(self, visual_feat, img_path, img_type, image_ids=None):
-        self.type = img_type
         self.visual_feat = visual_feat
         self.image_ids = image_ids
         self.img_path = img_path
         _, self.preprocess = clip.load("ViT-B/32", device='cpu')
         self.length = len(self.image_ids)
+        self.type = img_type
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
@@ -358,11 +391,11 @@ class TxtDataSet4DualEncoding(data.Dataset):
 
         # BERT
         caption = self.captions[cap_id]
-        bert_ids = tokenize_caption(self.tokenizer, caption)
+        bert_ids = tokenize_caption(self.tokenizer, caption, cap_id)
         bert_tensor = torch.Tensor(bert_ids)
         # trans
         caption_trans = self.captions_trans[cap_id_trans]
-        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans)
+        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans, cap_id_trans, type='ZH')
         bert_tensor_trans = torch.Tensor(bert_ids_trans)
         return bert_tensor, bert_tensor_trans,  index, cap_id
 

@@ -122,7 +122,6 @@ class Adversarial(nn.Module):
         self.reverse_grad = reverse_grad
         self.scale = scale
 
-        # 最后的输出维度为1
         if disc_type == 'weak':
             self.discriminator = LR(input_size, level=train_level, nclass=nclass, grad_reverse=reverse_grad, scale=scale)
         elif disc_type == 'not-so-weak':

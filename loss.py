@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+
 def cosine_sim(im, s):
     """Cosine similarity between all the image and sentence pairs
     """
@@ -36,13 +37,12 @@ def L1_sim(im, s):
     score = -YmX.abs().sum(2).t()
     return score
 
-
 def L1_sim_norm(im, s):
     """L1 normalization distance  1 - L_1/K
     """
     YmX = (s.unsqueeze(1).expand(s.size(0), im.size(0), s.size(1))
            - im.unsqueeze(0).expand(s.size(0), im.size(0), s.size(1)))
-    score = YmX.abs().sum(2).t() / im.size(1) - 1
+    score = YmX.abs().sum(2).t()/im.size(1) -1
     return score
 
 
@@ -54,32 +54,30 @@ def L2_sim(im, s):
     score = -YmX.pow(2).sum(2).t()
     return score
 
-
 def L2_sim_norm(im, s):
     """L2 normalization distance  1 - L_2/K
     """
     YmX = (s.unsqueeze(1).expand(s.size(0), im.size(0), s.size(1))
            - im.unsqueeze(0).expand(s.size(0), im.size(0), s.size(1)))
-    score = YmX.pow(2).sum(2).t() / im.size(1) - 1
+    score = YmX.pow(2).sum(2).t()/im.size(1) - 1
     return score
 
 
 def jaccard_sim(im, s):
     im_bs = im.size(0)
     s_bs = s.size(0)
-    im = im.unsqueeze(1).expand(-1, s_bs, -1)
-    s = s.unsqueeze(0).expand(im_bs, -1, -1)
-    intersection = torch.min(im, s).sum(-1)
-    union = torch.max(im, s).sum(-1)
+    im = im.unsqueeze(1).expand(-1,s_bs,-1)
+    s = s.unsqueeze(0).expand(im_bs,-1,-1)
+    intersection = torch.min(im,s).sum(-1)
+    union = torch.max(im,s).sum(-1)
     score = intersection / union
     return score
 
 
 NAME_TO_SIM = {'cosine': cosine_sim, 'order': order_sim, 'euclidean': euclidean_sim, 'jaccard': jaccard_sim}
 
-
 def get_sim(name):
-    assert name in NAME_TO_SIM, '%s not supported.' % name
+    assert name in NAME_TO_SIM, '%s not supported.'%name
     return NAME_TO_SIM[name]
 
 
@@ -156,14 +154,15 @@ class TripletLoss(nn.Module):
             return cost_s.mean() + cost_im.mean()
 
 
-class DtlLoss(nn.Module):
-    """ sim-based distillation """
 
+
+class DtlLoss(nn.Module):
     def __init__(self):
         super(DtlLoss, self).__init__()
         self.temp = 0.07
 
     def forward(self, feat_targets, feat, feat_v):
+
         sim_v2t_m = cosine_sim(feat_v, feat_targets) / self.temp
         sim_t2v_m = cosine_sim(feat_targets, feat_v) / self.temp
 
@@ -181,17 +180,16 @@ class DtlLoss(nn.Module):
         return loss_ita
 
 
+
+
 class dtl_feat(nn.Module):
-    """ feat-based distillation """
 
     def __init__(self):
         super(dtl_feat, self).__init__()
         self.beta = 4
         self.smooth_l1 = nn.SmoothL1Loss(size_average=None, reduce=None, reduction='mean', beta=self.beta)
-
     def forward(self, feat_target, feat):
-        # loss = F.smooth_l1_loss(
-        #     feat.float(), feat_target.float(), reduction="none", beta=self.beta
-        # ).sum(dim=-1)
+
         loss = self.smooth_l1(feat.float(), feat_target.float())
         return loss
+

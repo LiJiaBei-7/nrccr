@@ -6,15 +6,77 @@ import torch.backends.cudnn as cudnn
 from torch.nn.utils.clip_grad import clip_grad_norm_
 
 import numpy as np
+from basic.bigfile import BigFile
 from loss import TripletLoss, dtl_feat, DtlLoss
 from transformers import BertModel
 import copy
-from transformer_ori_cross_no_res import BertAttention, TrainablePositionalEncoding, LinearLayer
-
-from adv import Adversarial
+from transformer_cross import BertAttention, TrainablePositionalEncoding, LinearLayer
 
 
 
+def l2norm(X):
+    """L2-normalize columns of X
+    """
+    norm = torch.pow(X, 2).sum(dim=1, keepdim=True).sqrt()
+    X = torch.div(X, norm)
+    return X
+
+
+def xavier_init_fc(fc):
+    """Xavier initialization for the fully connected layer
+    """
+    r = np.sqrt(6.) / np.sqrt(fc.in_features +
+                             fc.out_features)
+    fc.weight.data.uniform_(-r, r)
+    fc.bias.data.fill_(0)
+
+
+class MFC(nn.Module):
+    """
+    Multi Fully Connected Layers
+    """
+    def __init__(self, fc_layers, dropout, have_dp=True, have_bn=False, have_last_bn=False):
+        super(MFC, self).__init__()
+        # fc layers
+        self.n_fc = len(fc_layers)
+        if self.n_fc > 1:
+            if self.n_fc > 1:
+                self.fc1 = nn.Linear(fc_layers[0], fc_layers[1])
+
+            # dropout
+            self.have_dp = have_dp
+            if self.have_dp:
+                self.dropout = nn.Dropout(p=dropout)
+
+            # batch normalization
+            self.have_bn = have_bn
+            self.have_last_bn = have_last_bn
+            if self.have_bn:
+                if self.n_fc == 2 and self.have_last_bn:
+                    self.bn_1 = nn.BatchNorm1d(fc_layers[1])
+
+        self.init_weights()
+
+    def init_weights(self):
+        """Xavier initialization for the fully connected layer
+        """
+        if self.n_fc > 1:
+            xavier_init_fc(self.fc1)
+
+    def forward(self, inputs):
+
+        if self.n_fc <= 1:
+            features = inputs
+
+        elif self.n_fc == 2:
+            features = self.fc1(inputs)
+            # batch normalization
+            if self.have_bn and self.have_last_bn:
+                features = self.bn_1(features)
+            if self.have_dp:
+                features = self.dropout(features)
+
+        return features
 
 class video_transformer_encoding(nn.Module):
     def __init__(self, opt):
@@ -54,7 +116,6 @@ class video_transformer_encoding(nn.Module):
         return feat
 
 
-# resnet-152
 class image_encoding(nn.Module):
     def __init__(self, opt):
         super(image_encoding, self).__init__()
@@ -65,8 +126,9 @@ class image_encoding(nn.Module):
         return feat
 
 
-# clip
+
 import clip
+from torchvision.models import resnet50
 class image_encoding_clip(nn.Module):
     def __init__(self, opt):
         super(image_encoding_clip, self).__init__()
@@ -78,6 +140,7 @@ class image_encoding_clip(nn.Module):
 
 
     def forward(self, images):
+
         images = self.encoder.encode_image(images)
         images = torch.tensor(images,dtype=torch.float,requires_grad=True)
 
@@ -96,13 +159,15 @@ class Text_bert_encoding(nn.Module):
             'hidden_dropout_prob': 0.1,
             'attention_probs_dropout_prob': 0.1,
         }
+
         txt_bert_config = 'bert-base-multilingual-cased'
 
         self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
+        # multi fc layers
 
 
     def forward(self, text, *args):
-
+        # Embed word ids to vectors
         bert_caps, cap_mask = text
 
         batch_size, max_text_words = bert_caps.size()
@@ -124,6 +189,8 @@ class Text_bert_encoding(nn.Module):
                                         token_type_ids=token_type_ids,
                                         position_ids=position_ids,
                                         head_mask=None)
+
+        # features = text_bert_output[0][:, 0]
 
         # mapping to common space
         del text
@@ -204,77 +271,13 @@ class Text_share(nn.Module):
         feat_self_back = self.encoder_layer(feat_back, feat_back, mask_back, mask_back)
 
         if self.pooling == 'mean':
+            # pooling_cat
             feat_cross = torch.cat((feat_cross, feat_trans), 1)
             feat_cross_vec = F.avg_pool1d(feat_cross.permute(0, 2, 1), feat_cross.size(1)).squeeze(2)
             feat_back_vec = F.avg_pool1d(feat_self_back.permute(0, 2, 1), feat_self_back.size(1)).squeeze(2)
 
         return (feat_vec, feat_trans_vec, feat_cross_vec, feat_back_vec), (bert_seq, bert_seq_trans)
 
-
-
-def l2norm(X):
-    """L2-normalize columns of X
-    """
-    norm = torch.pow(X, 2).sum(dim=1, keepdim=True).sqrt()
-    X = torch.div(X, norm)
-    return X
-
-
-def xavier_init_fc(fc):
-    """Xavier initialization for the fully connected layer
-    """
-    r = np.sqrt(6.) / np.sqrt(fc.in_features +
-                             fc.out_features)
-    fc.weight.data.uniform_(-r, r)
-    fc.bias.data.fill_(0)
-
-
-class MFC(nn.Module):
-    """
-    Multi Fully Connected Layers
-    """
-    def __init__(self, fc_layers, dropout, have_dp=True, have_bn=False, have_last_bn=False):
-        super(MFC, self).__init__()
-        # fc layers
-        self.n_fc = len(fc_layers)
-        if self.n_fc > 1:
-            if self.n_fc > 1:
-                self.fc1 = nn.Linear(fc_layers[0], fc_layers[1])
-
-            # dropout
-            self.have_dp = have_dp
-            if self.have_dp:
-                self.dropout = nn.Dropout(p=dropout)
-
-            # batch normalization
-            self.have_bn = have_bn
-            self.have_last_bn = have_last_bn
-            if self.have_bn:
-                if self.n_fc == 2 and self.have_last_bn:
-                    self.bn_1 = nn.BatchNorm1d(fc_layers[1])
-
-        self.init_weights()
-
-    def init_weights(self):
-        """Xavier initialization for the fully connected layer
-        """
-        if self.n_fc > 1:
-            xavier_init_fc(self.fc1)
-
-    def forward(self, inputs):
-
-        if self.n_fc <= 1:
-            features = inputs
-
-        elif self.n_fc == 2:
-            features = self.fc1(inputs)
-            # batch normalization
-            if self.have_bn and self.have_last_bn:
-                features = self.bn_1(features)
-            if self.have_dp:
-                features = self.dropout(features)
-
-        return features
 
 
 
@@ -286,6 +289,7 @@ class Latent_mapping(nn.Module):
         super(Latent_mapping, self).__init__()
         
         self.l2norm = l2norm
+        # visual mapping
         self.mapping = MFC(mapping_layers, dropout, have_bn=True, have_last_bn=True)
 
 
@@ -387,11 +391,9 @@ class BaseModel(object):
         print(self.AdvAgent)
 
 
-
-
 class Model(BaseModel):
     """
-    NRCCR network
+    dual encoding network
     """
 
     def __init__(self, opt):
@@ -399,28 +401,22 @@ class Model(BaseModel):
         self.grad_clip = opt.grad_clip
         self.model_type = opt.model_type
 
-        # image encoding
         if self.model_type == 'img':
             if opt.img_encoder == 'clip':
-                # clip
                 self.vid_encoding = image_encoding_clip(opt)
             else:
-                # ResNet-152
                 self.vid_encoding = image_encoding(opt)
-        # video encoding
         else:
             self.vid_encoding = video_transformer_encoding(opt)
-
-        # text encoding
         self.text_encoding = Text_share(opt)
 
+        # lang-agnostic learning
+        from adv import Adversarial
         kwargs = {'opt': opt, 'input_size': opt.text_hidden_size,
                   'train_level': 'sent', 'train_type': 'GAN',
                   'reverse_grad': False, 'nclass': 2, 'scale': opt.scale,
                   'optim': 'adam', 'lr': opt.glr, 'betas': (0.9, 0.999), 'gamma': 0, 'eps': 1e-8,
                   'momentum': opt.momentum, 'disc_type': opt.disc_type}
-
-        # lang-agnostic learning
         self.AdvAgent = Adversarial(**kwargs)
 
         if torch.cuda.is_available():
@@ -435,14 +431,19 @@ class Model(BaseModel):
         self.init_info(opt)
 
         # Loss and Optimizer
-        self.criterion = TripletLoss(margin=opt.margin,
+        if opt.loss_fun == 'mrl':
+            self.criterion = TripletLoss(margin=opt.margin,
                                          measure=opt.measure,
                                          max_violation=opt.max_violation,
                                          cost_style=opt.cost_style,
                                          direction=opt.direction)
-        # feat-view
+
+        if opt.optimizer == 'adam':
+            self.optimizer = torch.optim.Adam(self.params, lr=opt.learning_rate)
+        elif opt.optimizer == 'rmsprop':
+            self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
+
         self.dtl_feat = dtl_feat()
-        # sim-view
         self.dtl_criterion = DtlLoss()
 
         self.tri_alpha = opt.tri_alpha
@@ -451,12 +452,6 @@ class Model(BaseModel):
         self.back_w = opt.back_w
 
         self.Eiters = 0
-
-        if opt.optimizer == 'adam':
-            self.optimizer = torch.optim.Adam(self.params, lr=opt.learning_rate)
-        elif opt.optimizer == 'rmsprop':
-            self.optimizer = torch.optim.RMSprop(self.params, lr=opt.learning_rate)
-
 
     def parallel(self):
         self.vid_encoding = nn.parallel.DataParallel(self.vid_encoding)
@@ -467,16 +462,11 @@ class Model(BaseModel):
         """
         cap_emb, cap_emb_trans, cap_emb_cross, cap_emb_back = cap_embs
         cap_bert_emb, cap_bert_emb_trans = cap_bert_embs
-        # source-video-triplet
         loss_tri = self.criterion(cap_emb, vid_emb)
-        # target(translation)-video-triplet
         loss_tri_trans = self.criterion(cap_emb_trans, vid_emb) * self.tri_alpha
 
-        # sim-based distillation
         loss_dtl = self.dtl_criterion(cap_emb_cross.detach(), cap_emb_trans, vid_emb) * self.dtl_beta
-        # feat-based distillation
         loss_feat = self.dtl_feat(cap_emb_cross, cap_emb_trans) * self.l1_gama
-        # cycle consistent
         loss_contrastive = self.criterion(cap_emb, cap_emb_back) * self.back_w
 
         real_idx = 1
@@ -488,7 +478,6 @@ class Model(BaseModel):
         # update encoder
         others_loss = self.AdvAgent.gen_loss(cap_bert_emb, cap_bert_emb_trans, real_idx, fake_idx)
 
-        # all
         loss = loss_tri + loss_tri_trans + loss_dtl + loss_contrastive + others_loss + loss_feat
 
         self.logger.update('Le', loss.item(), vid_emb.size(0))

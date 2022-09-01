@@ -1,5 +1,8 @@
+import json
 import torch
 import torch.utils.data as data
+import numpy as np
+import re
 
 from basic.util import getVideoId
 
@@ -7,6 +10,10 @@ from transformers import BertTokenizer
 
 
 VIDEO_MAX_LEN=64
+
+def clean_str_cased(string):
+    string = re.sub(r"[^A-Za-z0-9]", " ", string)
+    return string.strip().lower().split()
 
 
 def create_tokenizer():
@@ -19,9 +26,25 @@ def create_tokenizer():
                                                 cache_dir=cache_dir)
     return tokenizer
 
-def tokenize_caption(tokenizer, raw_caption):
+def tokenize_caption(tokenizer, raw_caption, cap_id, type='EN'):
 
-    ids = tokenizer.encode(raw_caption, add_special_tokens=True)
+    if(type == 'EN'):
+        word_list = clean_str_cased(raw_caption)
+        txt_caption = " ".join(word_list)
+        # Remove whitespace at beginning and end of the sentence.
+        txt_caption = txt_caption.strip()
+        # Add period at the end of the sentence if not already there.
+        try:
+            if txt_caption[-1] not in [".", "?", "!"]:
+                txt_caption += "."
+        except:
+            print(cap_id)
+        txt_caption = txt_caption.capitalize()
+
+        ids = tokenizer.encode(txt_caption, add_special_tokens=True)
+
+    else:
+        ids = tokenizer.encode(raw_caption, add_special_tokens=True)
 
     return ids
 
@@ -137,7 +160,6 @@ def collate_frame(data):
 def collate_text(data, opt):
     if data[0][0] is not None:
         data.sort(key=lambda x: len(x[0]), reverse=True)
-    # captions, cap_bows, idxs, cap_ids = zip(*data)
         bert_cap, bert_cap_trans, idxs, cap_ids = zip(*data)
 
     # BERT
@@ -223,8 +245,6 @@ class Dataset4DualEncoding(data.Dataset):
 
     def __getitem__(self, index):
         cap_id = self.cap_ids[index]
-        # yBsSqb4orpw_000000_000010#enc#5
-        # Ptf_2VRj-V0_000122_000132#enc2zh#0
         str_ls = cap_id.split('#')
         if self.data_type == 'zh':
             tmp = '#zh#'
@@ -244,15 +264,15 @@ class Dataset4DualEncoding(data.Dataset):
 
         # BERT
         caption = self.captions[cap_id]
-        bert_ids = tokenize_caption(self.tokenizer, caption)
+        bert_ids = tokenize_caption(self.tokenizer, caption, cap_id, type='EN')
         bert_tensor = torch.Tensor(bert_ids)
         # trans
         caption_trans = self.captions_trans[cap_id_trans]
-        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans)
+        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans, cap_id_trans, type='ZH')
         bert_tensor_trans = torch.Tensor(bert_ids_trans)
         # back
         caption_back = self.captions_back[cap_id_back]
-        bert_ids_back = tokenize_caption(self.tokenizer, caption_back)
+        bert_ids_back = tokenize_caption(self.tokenizer, caption_back, cap_id_trans, type='ZH')
         bert_tensor_back = torch.Tensor(bert_ids_back)
 
         # BERT
@@ -333,11 +353,11 @@ class TxtDataSet4DualEncoding(data.Dataset):
 
         # BERT
         caption = self.captions[cap_id]
-        bert_ids = tokenize_caption(self.tokenizer, caption)
+        bert_ids = tokenize_caption(self.tokenizer, caption, cap_id)
         bert_tensor = torch.Tensor(bert_ids)
         # trans
         caption_trans = self.captions_trans[cap_id_trans]
-        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans)
+        bert_ids_trans = tokenize_caption(self.tokenizer, caption_trans, cap_id_trans, type='ZH')
         bert_tensor_trans = torch.Tensor(bert_ids_trans)
         return bert_tensor, bert_tensor_trans,  index, cap_id
 
@@ -362,28 +382,6 @@ def get_train_data_loaders(opt, cap_files, cap_files_trans, cap_files_back, visu
                                     collate_fn=collate_frame_gru_fn)
                         for x in cap_files  if x=='train' }
     return data_loaders
-
-
-
-def get_test_data_loaders(cap_files, visual_feats, batch_size=100, num_workers=2, video2frames = None):
-    """
-    Returns torch.utils.data.DataLoader for test dataset
-    Args:
-        cap_files: caption files (dict) keys: [test]
-        visual_feats: image feats (dict) keys: [test]
-    """
-    dset = {'test': Dataset4DualEncoding(cap_files['test'], visual_feats['test'], video2frames = video2frames['test'])}
-
-
-    data_loaders = {x: torch.utils.data.DataLoader(dataset=dset[x],
-                                    batch_size=batch_size,
-                                    shuffle=False,
-                                    pin_memory=True,
-                                    num_workers=num_workers,
-                                    collate_fn=collate_frame_gru_fn)
-                        for x in cap_files }
-    return data_loaders
-
 
 def get_vis_data_loader(vis_feat, batch_size=100, num_workers=2, video2frames=None, video_ids=None):
     dset = VisDataSet4DualEncoding(vis_feat, video2frames, video_ids=video_ids)

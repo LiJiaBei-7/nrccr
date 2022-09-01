@@ -1,8 +1,7 @@
 rootpath=$1
 overwrite=0
-collection=msrvtt10kcn
+collection=msrvttcn
 visual_feature=resnext101-resnet152
-space=hybrid
 learning_rate=1e-4
 text_hidden_size=768
 video_hidden_size=1024
@@ -31,8 +30,8 @@ framework=Full_msrvtt10kcn_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl
 
 # training
 gpu=$2
-CUDA_VISIBLE_DEVICES=$gpu python trainer.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
-                                            --collection $collection --visual_feature $visual_feature --space $space\
+CUDA_VISIBLE_DEVICES=$gpu python trainer_vid.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
+                                            --collection $collection --visual_feature $visual_feature \
                                             --framework $framework --learning_rate $learning_rate --frozen $frozen\
                                             --text_hidden_size $text_hidden_size --text_num_attention $text_num_attention\
                                             --video_hidden_size $video_hidden_size --video_num_attention $video_num_attention\

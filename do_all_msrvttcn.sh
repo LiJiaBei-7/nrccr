@@ -15,15 +15,15 @@ frozen=frozen
 data_type=google_enc2zh
 glr=1e-3
 scale=0.001
-disc_type=strong
-momentum=0.8
+disc_type=not-so-weak
+momentum=0.
 optim=adam
 tri_alpha=0.6
 dtl_beta=0.4
 l1_gama=0.1
 back_w=0.5
-layer_list=layer.11-layer.10-layer.9-layer.8-layer.7
-framework=Full_msrvtt10kcn_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
+layer_list=layer.11-layer.10-layer.9-layer.8-layer.7-layer.6-layer.5
+framework=1_Full_msrvtt10kcn_$frozen/data_type_$data_type/tri_alpha_$tri_alpha/dtl_beta_$dtl_beta/l1_gama_$l1_gama/back_w_$back_w/video_layer_$video_layer/text_layer_$text_layer/text_num_attention_$text_num_attention/text_hidden_size_$text_hidden_size/vido_pooling_$video_pooling/text_pooling_$text_pooling\
 /layer_list_$layer_list/glr_$glr/scale_$scale/disc_type_$disc_type/momentum_$momentum/optim_$optim
 #framework=test
 

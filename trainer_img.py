@@ -34,8 +34,8 @@ def main():
         raise NotImplementedError('collection structure %s not implemented' % collectionStrt)
 
 
-    cap_file = {'train': '%s_en.caption.txt' % opt.trainCollection,
-                'val': '%s_%s_de2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0])}
+    cap_file = {'train': '%s_enc.caption.txt' % opt.trainCollection,
+                'val': '%s_%s_%s2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0], opt.data_type.split('2')[-1])}
 
     cap_file_trans = {'train': '%s_%s.caption.txt' % (opt.trainCollection, opt.data_type),
                 'val': '%s_%s.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}

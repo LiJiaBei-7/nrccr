@@ -38,7 +38,7 @@ batch_size=128
 gpu=$2
 
 CUDA_VISIBLE_DEVICES=$gpu python trainer_img.py --rootpath $rootpath --overwrite $overwrite --max_violation --text_norm --visual_norm \
-                                            --collection $collection --visual_feature $visual_feature --space $space\
+                                            --collection $collection --visual_feature $visual_feature\
                                             --framework $framework --learning_rate $learning_rate --frozen $frozen\
                                             --text_hidden_size $text_hidden_size --text_num_attention $text_num_attention\
                                             --video_hidden_size $video_hidden_size --video_num_attention $video_num_attention\

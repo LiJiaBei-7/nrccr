@@ -4,7 +4,7 @@ import torch.utils.data as data
 import numpy as np
 
 from basic.util import getVideoId
-from util.vocab import clean_str,clean_str_cased
+# from util.vocab import clean_str,clean_str_cased
 
 from transformers import BertTokenizer
 

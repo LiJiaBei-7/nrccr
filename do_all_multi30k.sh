@@ -2,7 +2,6 @@ rootpath=$1
 overwrite=1
 collection=multi30k
 visual_feature=resnet_152
-space=hybrid
 learning_rate=1e-4
 text_hidden_size=768
 video_hidden_size=1024

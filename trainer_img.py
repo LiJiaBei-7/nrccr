@@ -170,10 +170,7 @@ def main():
         # train for one epoch
         train(opt, data_loaders['train'], model, epoch)
 
-        if opt.space == 'hybrid':
-            rsum = validate.validate_hybrid(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
-        elif opt.space == 'latent':
-            rsum = validate.validate(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
+        rsum = validate.validate_hybrid(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
         
         # remember best R@ sum and save checkpoint
         is_best = rsum > best_rsum

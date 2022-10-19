@@ -9,7 +9,7 @@ import evaluation
 from model import get_model
 from validate import norm_score, cal_perf
 
-import util.tag_data_provider as data
+import util.tag_data_provider_img as data
 import util.metrics as metrics
 
 from basic.util import read_dict, log_config
@@ -63,7 +63,7 @@ def main():
     # data loader prepare
     if collectionStrt == 'single':
         tmp = options.data_type.split('_')[-1].split('2')
-        lang_type = tmp[-1] + tmp[0]
+        lang_type = tmp[-1] + '2' + tmp[0]
         test_cap = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s%s_enc_2016.caption.txt' %(testCollection, opt.split))
         test_cap_trans = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s%s_google_%s_2016.caption.txt' %(testCollection, opt.split, lang_type))
     elif collectionStrt == 'multiple':
@@ -77,9 +77,13 @@ def main():
     visual_feature_name = {'test': 'test_2016_flickr-resnet152-avgpool.npy'}
     visual_feat_path = os.path.join(rootpath, collections_pathname['test'], 'FeatureData', options.visual_feature, visual_feature_name['test'])
     import numpy as np
-    visual_feats = {'test': np.load(visual_feat_path, encoding="latin1")}
 
-    assert options.visual_feat_dim == visual_feats['test'].shape[-1]
+
+    if options.img_encoder != 'clip':
+        visual_feats = {'test': np.load(visual_feat_path, encoding="latin1")}
+        assert options.visual_feat_dim == visual_feats['test'].shape[-1]
+    else:
+        visual_feats = {'test': 'test'}
 
     # Construct the model
     model = get_model(options.model)(options)
@@ -95,7 +99,7 @@ def main():
     with open(image_id_file) as f:
         for line in f.readlines():
             test_image_ids_list.append(line.strip())
-    vid_data_loader = data.get_vis_data_loader(visual_feats['test'], opt.batch_size, opt.workers, image_ids=test_image_ids_list)
+    vid_data_loader = data.get_vis_data_loader(options, visual_feats['test'], options.img_path, opt.batch_size, opt.workers, image_ids=test_image_ids_list)
     text_data_loader = data.get_txt_data_loader(options, caption_files['test'], caption_files_trans['test'], opt.batch_size, opt.workers, lang_type)
 
     # mapping

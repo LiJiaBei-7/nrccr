@@ -64,7 +64,7 @@ def main():
     if collectionStrt == 'single':
         tmp = options.data_type.split('_')[-1].split('2')
         lang_type = tmp[-1] + '2' + tmp[0]
-        test_cap = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s%s_enc_2016.caption.txt' %(testCollection, opt.split))
+        test_cap = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s%s_%s_2016.caption.txt' %(testCollection, opt.split, tmp[-1]))
         test_cap_trans = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s%s_google_%s_2016.caption.txt' %(testCollection, opt.split, lang_type))
     elif collectionStrt == 'multiple':
         test_cap = os.path.join(rootpath, collections_pathname['test'], 'TextData', '%s.caption.txt'%testCollection)

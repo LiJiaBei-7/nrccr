@@ -131,7 +131,7 @@ def main():
         for line in f.readlines():
             val_image_ids_list.append(line.strip())
     val_vid_data_loader = data.get_vis_data_loader(opt, visual_feats['val'], opt.img_path, opt.batch_size, opt.workers, image_ids=val_image_ids_list)
-    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers)
+    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers, lang_type=opt.data_type)
 
     # Construct the model
     model = get_model(opt.model)(opt)

@@ -55,12 +55,12 @@ We use three public datasets: VATEX, MSR-VTT-CN, and Multi-30K. The extracted fe
   </tr>  
   <tr align='center'>
     <td>VATEX</td>
-    <td><a href='https://pan.baidu.com/s/1lg23K93lVwgdYs5qnTuMFg#list/path=%2Fsharelink3222141211-996753374765216%2FTPAMI2021_hybrid_space&parentPath=%2Fsharelink3222141211-996753374765216'>vatex-i3d.tar.gz, pwd:c3p0</a></td>
+    <td><a href='https://pan.baidu.com/s/1lg23K93lVwgdYs5qnTuMFg?pwd=p3p0'>vatex-i3d.tar.gz, pwd:p3p0</a></td>
     <td><a href='https://www.aliyundrive.com/s/xDrzCDNEHWP'>vatex_caption, pwd:oy27</a></td>
   </tr>
   <tr align="center">
     <td>MSR-VTT-CN</td>
-    <td><a href='https://pan.baidu.com/s/1lg23K93lVwgdYs5qnTuMFg#list/path=%2Fsharelink3222141211-996753374765216%2FTPAMI2021_hybrid_space&parentPath=%2Fsharelink3222141211-996753374765216'>msrvtt10k-resnext101_resnet152.tar.gz, pwd:c3p0</a></td>
+    <td><a href='https://pan.baidu.com/s/1lg23K93lVwgdYs5qnTuMFg?pwd=p3p0'>msrvtt10k-resnext101_resnet152.tar.gz, pwd:p3p0</a></td>
     <td><a href='https://www.aliyundrive.com/s/3sBNJqfTxcp'>cn_caption, pwd:oy27</a></td>
   </tr>
   <tr align="center">

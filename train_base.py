@@ -90,6 +90,9 @@ def parse_args():
     parser.add_argument('--img_encoder', type=str, default='clip', help='clip | resnet152 | ')
     parser.add_argument('--img_encoder_name', type=str)
     parser.add_argument('--img_encoder_input_dim', type=int,default=512)
+
+    parser.add_argument('--task', type=int, default=2)
+
     args = parser.parse_args()
     return args
 

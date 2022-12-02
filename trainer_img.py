@@ -6,7 +6,7 @@ import logging
 
 import validate
 import tensorboard_logger as tb_logger
-from model import get_model, get_we_parameter
+from model import get_model
 
 import util.tag_data_provider_img as data
 
@@ -20,28 +20,37 @@ def main():
     opt = parse_args()
 
     rootpath = opt.rootpath
-    collectionStrt = opt.collectionStrt
     collection = opt.collection
 
-    if collectionStrt == 'single': # train,val data are in one directory
-        opt.trainCollection = '%strain' % collection
-        opt.valCollection = '%sval' % collection
-        opt.testCollection = '%stest' % collection
-        collections_pathname = {'train': collection, 'val': collection, 'test': collection}
-    elif collectionStrt == 'multiple': # train,val data are separated in multiple directories
-        collections_pathname = {'train': opt.trainCollection, 'val': opt.valCollection, 'test': opt.testCollection}
-    else:
-        raise NotImplementedError('collection structure %s not implemented' % collectionStrt)
+    opt.trainCollection = '%strain' % collection
+    opt.valCollection = '%sval' % collection
+    opt.testCollection = '%stest' % collection
+    collections_pathname = {'train': collection, 'val': collection, 'test': collection}
 
+    if collection == 'multi30k' and opt.task == 2:
 
-    cap_file = {'train': '%s_enc.caption.txt' % opt.trainCollection,
+            cap_file = {'train': 'Flickr30ktrain_enc.caption.txt',
                 'val': '%s_%s_%s2enc.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0], opt.data_type.split('2')[-1])}
 
-    cap_file_trans = {'train': '%s_%s.caption.txt' % (opt.trainCollection, opt.data_type),
-                'val': '%s_%s.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}
+            cap_file_trans = {'train': 'Flickr30ktrain_%s.caption.txt' % (opt.data_type),
+                              'val': '%s_%s.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1])}
 
-    cap_file_back = {'train': '%s_%s2enc.caption.txt' % (opt.trainCollection, opt.data_type),
-                      'val': '%s_de.caption.txt' % opt.valCollection}
+            cap_file_back = {'train': 'Flickr30ktrain_%s2enc.caption.txt' % (opt.data_type),
+                             'val': ''}
+    else:
+        if 'de' in opt.data_type:
+            tmp = '_task1'
+        else:
+            tmp = ''
+
+        cap_file = {'train': '%s_enc.caption.txt' % opt.trainCollection,
+                    'val': '%s_%s_%s2enc%s.caption.txt' % (opt.valCollection, opt.data_type.split('_')[0], opt.data_type.split('2')[-1], tmp)}
+
+        cap_file_trans = {'train': '%s_%s.caption.txt' % (opt.trainCollection, opt.data_type),
+                    'val': '%s_%s%s.caption.txt' % (opt.valCollection, opt.data_type.split('2')[-1], tmp)}
+
+        cap_file_back = {'train': '%s_%s2enc.caption.txt' % (opt.trainCollection, opt.data_type),
+                          'val': ''}
 
     opt.collections_pathname = collections_pathname
     opt.cap_file = cap_file
@@ -50,16 +59,7 @@ def main():
         assert opt.text_norm is True
         assert opt.visual_norm is True
 
-    # checkpoint path
-
-    visual_encode_info = 'visual_feature_%s_visual_rnn_size_%d_visual_norm_%s' % \
-            (opt.visual_feature, opt.visual_rnn_size, opt.visual_norm)
-    visual_encode_info += "_kernel_sizes_%s_num_%s" % (opt.visual_kernel_sizes, opt.visual_kernel_num)
-
-    framework = opt.framework
-
-
-    opt.logger_name = os.path.join(rootpath, collections_pathname['train'], opt.cv_name, collections_pathname['val'], framework, opt.postfix)
+    opt.logger_name = os.path.join(rootpath, collections_pathname['train'], opt.cv_name, collections_pathname['val'], opt.framework, opt.postfix)
     logging.info(opt.logger_name)
 
     if checkToSkip(os.path.join(opt.logger_name, 'model_best.pth.tar'), opt.overwrite):
@@ -73,32 +73,33 @@ def main():
     tb_logger.configure(opt.logger_name, flush_secs=5)
     logging.info(json.dumps(vars(opt), indent=2))
 
-
-    opt.text_kernel_sizes = list(map(int, opt.text_kernel_sizes.split('-')))
-    opt.visual_kernel_sizes = list(map(int, opt.visual_kernel_sizes.split('-')))
     opt.layer_list = list(opt.layer_list.split('-'))
 
     # caption
-    caption_files = { x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file[x])
+    caption_files = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file[x])
                         for x in cap_file }
     caption_files_trans = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_trans[x])
                         for x in cap_file_trans }
 
     caption_files_back = {x: os.path.join(rootpath, collections_pathname[x], 'TextData', cap_file_back[x])
                            for x in cap_file_back}
-    # Load visual features
-    visual_feature_name = {'train': f'train-{opt.visual_feature}-avgpool.npy',
-                           'val': f'val-{opt.visual_feature}-avgpool.npy'}
-    visual_feat_path = {
-        x: os.path.join(rootpath, collections_pathname[x], 'FeatureData', opt.visual_feature, visual_feature_name[x])
-        for x in cap_file}
 
-    print(visual_feat_path)
-    exit()
 
-    import numpy as np
-    visual_feats = {x: np.load(visual_feat_path[x], encoding="latin1") for x in visual_feat_path}   #class 'numpy.ndarray'
-    opt.visual_feat_dim = visual_feats['train'].shape[-1] # 2048
+    if opt.img_encoder != 'clip':
+        # Load visual features
+        visual_feature_name = {'train': f'train-{opt.visual_feature}-avgpool.npy',
+                               'val': f'val-{opt.visual_feature}-avgpool.npy'}
+        visual_feat_path = {
+            x: os.path.join(rootpath, collections_pathname[x], 'FeatureData', opt.visual_feature, visual_feature_name[x])
+            for x in cap_file}
+
+        import numpy as np
+        visual_feats = {x: np.load(visual_feat_path[x], encoding="latin1") for x in visual_feat_path}   #class 'numpy.ndarray'
+        opt.visual_feat_dim = visual_feats['train'].shape[-1] # 2048
+    else:
+        opt.img_path = f'{opt.rootpath}/{opt.img_path}'
+        visual_feats = {x: opt.img_path for x in cap_file}
+        opt.visual_feat_dim = opt.video_hidden_size
 
     # initialize word embedding
     opt.we_parameter = None
@@ -106,32 +107,28 @@ def main():
     # mapping layer structure
     opt.text_mapping_layers = list(map(int, opt.text_mapping_layers.split('-')))
     opt.visual_mapping_layers = list(map(int, opt.visual_mapping_layers.split('-')))
-    if opt.concate == 'full':
-        # opt.text_mapping_layers[0] = opt.bow_vocab_size + opt.text_rnn_size*2 + opt.text_kernel_num * len(opt.text_kernel_sizes)
-        # opt.text_mapping_layers[0] = 768 + opt.text_rnn_size*2 + opt.text_kernel_num * len(opt.text_kernel_sizes)
-        opt.text_mapping_layers[0] = opt.text_hidden_size
-        opt.visual_mapping_layers[0] = opt.visual_feat_dim
-    elif opt.concate == 'reduced':
-        opt.text_mapping_layers[0] = opt.text_rnn_size*2 + opt.text_kernel_num * len(opt.text_kernel_sizes) 
-        opt.visual_mapping_layers[0] = opt.visual_rnn_size*2 + opt.visual_kernel_num * len(opt.visual_kernel_sizes)
-    else:
-        raise NotImplementedError('Model %s not implemented' % opt.model)
 
+    opt.text_mapping_layers[0] = opt.text_hidden_size
+    opt.visual_mapping_layers[0] = opt.visual_feat_dim
 
     # set data loader
     image_id_name = {'train': 'train_id.txt', 'val': 'val_id.txt'}
-    image_id_file = {x: os.path.join(rootpath, collections_pathname[x], 'FeatureData', opt.visual_feature, image_id_name[x])
+    if collection == 'mscoco':
+        image_id_name['val'] = f'{opt.data_type.split("2")[-1]}_val_id.txt'
+
+    image_id_file = {x: os.path.join(rootpath, collections_pathname[x], 'FeatureData', image_id_name[x])
                      for x in cap_file}
 
+
     data_loaders = data.get_train_data_loaders(opt,
-        caption_files, caption_files_trans, caption_files_back, visual_feats, opt.img_path, opt.batch_size, opt.workers, image_id_file=image_id_file)
+        caption_files, caption_files_trans, caption_files_back, visual_feats, opt.batch_size, opt.workers, image_id_file=image_id_file)
 
     val_image_ids_list = []
     with open(image_id_file['val']) as f:
         for line in f.readlines():
             val_image_ids_list.append(line.strip())
-    val_vid_data_loader = data.get_vis_data_loader(opt, visual_feats['val'], opt.img_path, opt.batch_size, opt.workers, image_ids=val_image_ids_list)
-    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers, lang_type=opt.data_type)
+    val_vid_data_loader = data.get_vis_data_loader(opt, visual_feats['val'], opt.batch_size, opt.workers, image_ids=val_image_ids_list)
+    val_text_data_loader = data.get_txt_data_loader(opt, caption_files['val'], caption_files_trans['val'], opt.batch_size, opt.workers, is_test=False)
 
     # Construct the model
     model = get_model(opt.model)(opt)
@@ -153,7 +150,6 @@ def main():
             model.Eiters = checkpoint['Eiters']
             logging.info("=> loaded checkpoint '{}' (epoch {}, best_rsum {})"
                   .format(opt.resume, start_epoch, best_rsum))
-            # validate.validate(opt, tb_logger, data_loaders['val'], model, measure=opt.measure)
         else:
             logging.info("=> no checkpoint found at '{}'".format(opt.resume))
 
@@ -171,7 +167,7 @@ def main():
         train(opt, data_loaders['train'], model, epoch)
 
         rsum = validate.validate_hybrid(opt, tb_logger, val_vid_data_loader, val_text_data_loader, model, measure=opt.measure)
-        
+
         # remember best R@ sum and save checkpoint
         is_best = rsum > best_rsum
         best_rsum = max(rsum, best_rsum)
@@ -218,13 +214,8 @@ def main():
         fout.write('best performance on validation: ' + str(best_rsum))
 
     # generate evaluation shell script
-    if opt.testCollection == 'iacc.3':
-        striptStr = ''.join(open('util/TEMPLATE_do_test_avs.sh').readlines())
-        striptStr = striptStr.replace('@@@query_sets@@@', 'tv16.avs.txt,tv17.avs.txt,tv18.avs.txt')
-    else:
-        striptStr = ''.join(open('util/TEMPLATE_do_test_img.sh').readlines())
+    striptStr = ''.join(open('util/TEMPLATE_do_test_img.sh').readlines())
     striptStr = striptStr.replace('@@@rootpath@@@', rootpath)
-    striptStr = striptStr.replace('@@@collectionStrt@@@', collectionStrt)
     striptStr = striptStr.replace('@@@testCollection@@@', collections_pathname['test'])
     striptStr = striptStr.replace('@@@logger_name@@@', opt.logger_name)
     striptStr = striptStr.replace('@@@overwrite@@@', str(opt.overwrite))

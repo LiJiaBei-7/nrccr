@@ -78,6 +78,7 @@ class MFC(nn.Module):
 
         return features
 
+# video encoder
 class video_transformer_encoding(nn.Module):
     def __init__(self, opt):
         super(video_transformer_encoding, self).__init__()
@@ -116,7 +117,9 @@ class video_transformer_encoding(nn.Module):
         return feat
 
 
+# image encoder for pre-extracted frame features
 class image_encoding(nn.Module):
+
     def __init__(self, opt):
         super(image_encoding, self).__init__()
         self.proj = nn.Linear(opt.visual_feat_dim, opt.visual_feat_dim)
@@ -126,10 +129,10 @@ class image_encoding(nn.Module):
         return feat
 
 
-
+# image encoder for clip
 import clip
-from torchvision.models import resnet50
 class image_encoding_clip(nn.Module):
+
     def __init__(self, opt):
         super(image_encoding_clip, self).__init__()
         self.img_encoder = opt.img_encoder
@@ -147,11 +150,9 @@ class image_encoding_clip(nn.Module):
         return self.proj(images)
 
 
-
+# bert encoder
 class Text_bert_encoding(nn.Module):
-    """
-    Section 3.2. Text-side Multi-level Encoding
-    """
+
     def __init__(self, opt):
         super(Text_bert_encoding, self).__init__()
         self.dropout = nn.Dropout(p=opt.dropout)
@@ -163,8 +164,6 @@ class Text_bert_encoding(nn.Module):
         txt_bert_config = 'bert-base-multilingual-cased'
 
         self.text_bert = BertModel.from_pretrained(txt_bert_config, return_dict=True, **self.txt_bert_params)
-        # multi fc layers
-
 
     def forward(self, text, *args):
         # Embed word ids to vectors
@@ -174,7 +173,6 @@ class Text_bert_encoding(nn.Module):
 
         token_type_ids_list = []  # Modality id
         position_ids_list = []  # Position
-
 
         ids_size = (batch_size,)
 
@@ -190,15 +188,12 @@ class Text_bert_encoding(nn.Module):
                                         position_ids=position_ids,
                                         head_mask=None)
 
-        # features = text_bert_output[0][:, 0]
-
-        # mapping to common space
         del text
         torch.cuda.empty_cache()
         return text_bert_output
 
 
-
+# text encoder
 class Text_share(nn.Module):
 
     def __init__(self, opt):
@@ -228,7 +223,6 @@ class Text_share(nn.Module):
         else:
             text, text_trans, text_back = texts
 
-
         bert_caps, lengths, cap_mask = text
         bert_caps_trans, lengths_trans, cap_mask_trans = text_trans
 
@@ -248,7 +242,6 @@ class Text_share(nn.Module):
 
         feat_self = self.encoder_layer(feat, feat, mask, mask).cuda()  # (N, L, D_hidden)
         feat_self_trans = self.encoder_layer(feat_trans, feat_trans, mask_trans, mask_trans).cuda()  # (N, L, D_hidden)
-
 
         if self.pooling == 'mean':
             feat_vec = F.avg_pool1d(feat_self.permute(0, 2, 1), feat_self.size(1)).squeeze(2)
@@ -301,7 +294,6 @@ class Latent_mapping(nn.Module):
             latent_features = l2norm(latent_features)
 
         return latent_features
-
 
 
 
@@ -373,6 +365,7 @@ class BaseModel(object):
                     text_param.append(param)
 
         else:
+            # finetune all
             print(opt.frozen, '--------')
             text_param = list(self.text_encoding.parameters())
 

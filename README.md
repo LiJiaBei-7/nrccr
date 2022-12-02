@@ -22,6 +22,7 @@ source code of our paper [Cross-Lingual Cross-Modal Retrieval with Noise-Robust 
   * [Model Training and Evaluation](#model-training-and-evaluation-2)
   * [Evaluation using Provided Checkpoints](#Evaluation-using-Provided-Checkpoints-2)
   * [Expected Performance](#Expected-Performance-2)
+* [NRCCR on MSCOCO](#NRCCR-on-MSCOCO)
 * [Reference](#Reference)
 
 
@@ -47,7 +48,19 @@ conda deactivate
 
 ## Required Data
 
-We use three public datasets: VATEX, MSR-VTT-CN, and Multi-30K. The extracted feature is placed  in `$HOME/VisualSearch/`.
+We use three public datasets: VATEX, MSR-VTT-CN, and [Multi-30K](#https://github.com/multi30k/dataset). The extracted feature is placed  in `$HOME/VisualSearch/`.
+
+For Multi-30K, we have provided translation version (from Google Translate) of Task1 and Task2, respectively.  [Task1: Applied to translation tasks. Task2: Applied to captioning tasks.]. 
+
+In addition, we also provide MSCOCO dataset here, and corresponding performance below.  The validation and test set on Japanese from [STAIR Captions](#https://stair-lab-cit.github.io/STAIR-captions-web/), and that on Chinese from [COCO-CN](#https://github.com/li-xirong/coco-cn).
+
+Training set:
+
+​	source(en) + translation(en2xx) + back-translation(en2xx2en)
+
+Validation set and test set:
+
+​	target(xx) + translation(xx2en)
 
 <table>
   <tr align="center">
@@ -68,31 +81,75 @@ We use three public datasets: VATEX, MSR-VTT-CN, and Multi-30K. The extracted fe
     <td><a href='https://pan.baidu.com/s/1AzTN6rFyabirACVkVEVKCQ'>multi30k-resnet152.tar.gz, pwd:5khe</a></td>
     <td><a href='https://www.aliyundrive.com/s/zGEbQAvqHGy'>multi30k_caption, pwd:oy27</a></td>
   </tr>
+  <tr align="center">
+    <td>MSCOCO</td>
+    <td></td>
+    <td><a href='https://www.aliyundrive.com/s/PxToUYryguz'>mscoco_caption, pwd:13dc</a></td>
+  </tr>
 </table>
+
+
 
 ```shell
 ROOTPATH=$HOME/VisualSearch
 mkdir -p $ROOTPATH && cd $ROOTPATH
 
-# download the data of VATEX
-mkdir vatex && cd vatex
-mkdir TextData
-mkdir FeatureData && cd FeatureData
-tar zxf <feat-Name>.tar.gz
+Organize these files like this:
+# download the data of VATEX[English, Chinese]
+VisualSearch/VATEX/
+		FeatureData/
+				i3d_kinetics/
+						feature.bin
+						id.txt
+						shape.txt
+						video2frames.txt
+		TextData/
+				xx.txt
 
-# download the data of msrvtt10kcn
-mkdir msrvtt10kcn && cd msrvtt10kcn
-mkdir TextData
-mkdir FeatureData && cd FeatureData
-tar zxf <feat-Name>.tar.gz
+# download the data of MSR-VTT-CN[English, Chinese]
+VisualSearch/msrvttcn/
+		FeatureData/
+				resnext101-resnet152/
+						feature.bin
+						id.txt
+						shape.txt
+						video2frames.txt
+		TextData/
+				xx.txt
 
-# download the data of multi30k
-mkdir multi30k && cd multi30k
-mkdir TextData
-mkdir FeatureData && cd FeatureData
-tar zxf <feat-Name>.tar.gz
+# download the data of Multi-30K[Englich, German, French, Czech]
+# For Task2, the training set was translated from Flickr30K, which contains five captions per image, while for task1, each image corresponds to one caption.
+# The validation and test set on French and Czech are same in both tasks.
+VisualSearch/multi30k/
+		FeatureData/
+        train_id.txt
+        val_id.txt
+        test_id_2016.txt
 
-# <feat-Name> is corresponding feature name
+				resnet_152[optional]/
+            train-resnet_152-avgpool.npy
+            val-resnet_152-avgpool.npy
+            test_2016_flickr-resnet_152-avgpool.npy	
+		TextData/
+				xx.txt	
+		flickr30k-images/
+				xx.jpg
+
+# download the data of MSCOCO[English, Chinese, Japanese]
+VisualSearch/mscoco/
+		FeatureData/
+        train_id.txt
+        ja_val_id.txt
+        zh_val_id.txt
+        ja_test_id.txt
+        zh_test_id.txt
+		TextData/
+				xx.txt
+		all_pics/
+				xx.jpg
+		
+		image_ids.txt
+
 ```
 
 
@@ -140,7 +197,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 <table>
   <tr align="center">
-    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    <th rowspan='2'>Type</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
     </tr>
   <tr align="center">
         <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
@@ -151,6 +208,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
     <td>43.1</td><td>72.3</td><td>81.4</td><td>2.0</td><td>32.57</td><td>366.5</td>
   </tr>
 </table>
+
 
 
 
@@ -194,7 +252,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 <table>
   <tr align="center">
-    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    <th rowspan='2'>Type</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
     </tr>
   <tr align="center">
         <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
@@ -211,11 +269,12 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 
 
+
 ## NRCCR on Multi-30K
 
 ### Model Training and Evaluation
 
-Run the following script to train and evaluate `NRCCR` network on Multi-30K. Besides, if you want use the clip as the backbone to train, you need to download the raw images from [here](https://github.com/multi30k/dataset) for Flickr30K.
+Run the following script to train and evaluate `NRCCR` network on [Multi-30K](#https://github.com/multi30k/dataset). Besides, if you want use the clip as the backbone to train, you need to download the raw images from [here](https://github.com/multi30k/dataset) for Flickr30K.
 
 ```shell
 ROOTPATH=$HOME/VisualSearch
@@ -223,7 +282,7 @@ ROOTPATH=$HOME/VisualSearch
 conda activate nrccr_env
 
 # To train the model on the Multi-30K
-./do_all_multi30k.sh $ROOTPATH <gpu-id>
+./do_all_multi30k.sh $ROOTPATH <task> <gpu-id>
 ```
 
 
@@ -246,9 +305,11 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 ### Expected Performance
 
+Task1:
+
 <table>
   <tr align="center">
-    <th rowspan='2'>DataSet</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
+    <th rowspan='2'>Type</th><th colspan='5'>Text-to-Video Retrieval</th><th colspan='5'>Video-to-Text Retrieval</th> <th rowspan='2'>SumR</th>
     </tr>
   <tr align="center">
         <th> R@1 </th> <th> R@5 </th> <th> R@10 </th> <th> MedR </th> <th>	mAP </th>
@@ -270,6 +331,57 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
     <td>en2cs_resnet152</td><td>29.5</td><td>56.0</td><td>68.1</td><td>4.0</td><td>41.89</td><td>27.5</td><td>55.1</td><td>67.4</td><td>4.0</td><td>40.59</td><td>303.6</td>
   </tr>
 </table>
+
+
+Task2 :
+
+ (with clip)
+
+<table>
+  <tr align="center">
+  	<th> en2de_SumR </th>  <th> en2fr_SumR </th> <th> en2cs_SumR </th> 
+  </tr>
+	<tr align="center">
+  	<td>480.9</td> <td>482.1</td> <td>467.1</td>
+  </tr>
+</table>
+
+
+# NRCCR on MSCOCO
+
+
+### Model Training and Evaluation
+
+Run the following script to train and evaluate `NRCCR` network on MSCOCO. 
+
+```shell
+ROOTPATH=$HOME/VisualSearch
+
+conda activate nrccr_env
+
+# To train the model on the Multi-30K
+./do_all_mscoco.sh $ROOTPATH <gpu-id>
+```
+
+
+
+### Expected Performance
+
+ (with clip)
+
+<table>
+  <tr align="center">
+  	<th> en2cn_SumR </th>  <th> en2ja_SumR </th> 
+  </tr>
+	<tr align="center">
+  	<td>512.4</td> <td>507.0</td>
+  </tr>
+</table>
+
+
+
+
+
 
 
 

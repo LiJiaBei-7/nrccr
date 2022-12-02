@@ -50,11 +50,11 @@ conda deactivate
 
 ## Required Data
 
-We use three public datasets: VATEX, MSR-VTT-CN, and [Multi-30K](#https://github.com/multi30k/dataset). The extracted feature is placed  in `$HOME/VisualSearch/`.
+We use three public datasets: VATEX, MSR-VTT-CN, and [Multi-30K](https://github.com/multi30k/dataset). The extracted feature is placed  in `$HOME/VisualSearch/`.
 
 For Multi-30K, we have provided translation version (from Google Translate) of Task1 and Task2, respectively.  [Task1: Applied to translation tasks. Task2: Applied to captioning tasks.]. 
 
-In addition, we also provide MSCOCO dataset here, and corresponding performance below.  The validation and test set on Japanese from [STAIR Captions](#https://stair-lab-cit.github.io/STAIR-captions-web/), and that on Chinese from [COCO-CN](#https://github.com/li-xirong/coco-cn).
+In addition, we also provide MSCOCO dataset here, and corresponding performance below.  The validation and test set on Japanese from [STAIR Captions](https://stair-lab-cit.github.io/STAIR-captions-web/), and that on Chinese from [COCO-CN](https://github.com/li-xirong/coco-cn).
 
 Training set:
 
@@ -182,7 +182,9 @@ conda activate nrccr_env
 
 ### Evaluation using Provided Checkpoints
 
-Download trained checkpoint on VATEX from Baidu pan ([url](https://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
+Download trained checkpoint on VATEX from Baidu pan ([url](
+
+s://pan.baidu.com/s/1QPPBZq_fN8D4tnf_dhfQKA),  pwd:ise6) and run the following script to evaluate it.
 
 ```shell
 ROOTPATH=$HOME/VisualSearch/
@@ -276,7 +278,7 @@ tar zxf $ROOTPATH/<best_model>.pth.tar -C $ROOTPATH
 
 ### Model Training and Evaluation
 
-Run the following script to train and evaluate `NRCCR` network on [Multi-30K](#https://github.com/multi30k/dataset). Besides, if you want use the clip as the backbone to train, you need to download the raw images from [here](https://github.com/multi30k/dataset) for Flickr30K.
+Run the following script to train and evaluate `NRCCR` network on [Multi-30K](https://github.com/multi30k/dataset). Besides, if you want use the clip as the backbone to train, you need to download the raw images from [here](https://github.com/multi30k/dataset) for Flickr30K.
 
 ```shell
 ROOTPATH=$HOME/VisualSearch

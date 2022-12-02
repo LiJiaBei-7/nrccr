@@ -23,6 +23,8 @@ source code of our paper [Cross-Lingual Cross-Modal Retrieval with Noise-Robust 
   * [Evaluation using Provided Checkpoints](#Evaluation-using-Provided-Checkpoints-2)
   * [Expected Performance](#Expected-Performance-2)
 * [NRCCR on MSCOCO](#NRCCR-on-MSCOCO)
+	* [Model Training and Evaluation](#model-training-and-evaluation-3)
+	* [Expected Performance](#Expected-Performance-3)
 * [Reference](#Reference)
 
 

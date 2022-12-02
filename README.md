@@ -99,58 +99,58 @@ mkdir -p $ROOTPATH && cd $ROOTPATH
 Organize these files like this:
 # download the data of VATEX[English, Chinese]
 VisualSearch/VATEX/
-		FeatureData/
-				i3d_kinetics/
-						feature.bin
-						id.txt
-						shape.txt
-						video2frames.txt
-		TextData/
-				xx.txt
+	FeatureData/
+		i3d_kinetics/
+			feature.bin
+			id.txt
+			shape.txt
+			video2frames.txt
+	TextData/
+		xx.txt
 
 # download the data of MSR-VTT-CN[English, Chinese]
 VisualSearch/msrvttcn/
-		FeatureData/
-				resnext101-resnet152/
-						feature.bin
-						id.txt
-						shape.txt
-						video2frames.txt
-		TextData/
-				xx.txt
+	FeatureData/
+		resnext101-resnet152/
+			feature.bin
+			id.txt
+			shape.txt
+			video2frames.txt
+	TextData/
+		xx.txt
 
 # download the data of Multi-30K[Englich, German, French, Czech]
 # For Task2, the training set was translated from Flickr30K, which contains five captions per image, while for task1, each image corresponds to one caption.
 # The validation and test set on French and Czech are same in both tasks.
 VisualSearch/multi30k/
-		FeatureData/
-        train_id.txt
-        val_id.txt
-        test_id_2016.txt
+	FeatureData/
+		train_id.txt
+		val_id.txt
+		test_id_2016.txt
 
-				resnet_152[optional]/
-            train-resnet_152-avgpool.npy
-            val-resnet_152-avgpool.npy
-            test_2016_flickr-resnet_152-avgpool.npy	
-		TextData/
-				xx.txt	
-		flickr30k-images/
-				xx.jpg
+	resnet_152[optional]/
+		train-resnet_152-avgpool.npy
+		val-resnet_152-avgpool.npy
+		test_2016_flickr-resnet_152-avgpool.npy	
+	TextData/
+		xx.txt	
+	flickr30k-images/
+		xx.jpg
 
 # download the data of MSCOCO[English, Chinese, Japanese]
 VisualSearch/mscoco/
-		FeatureData/
-        train_id.txt
-        ja_val_id.txt
-        zh_val_id.txt
-        ja_test_id.txt
-        zh_test_id.txt
-		TextData/
-				xx.txt
-		all_pics/
-				xx.jpg
+	FeatureData/
+		train_id.txt
+		ja_val_id.txt
+		zh_val_id.txt
+		ja_test_id.txt
+		zh_test_id.txt
+	TextData/
+		xx.txt
+	all_pics/
+		xx.jpg
 		
-		image_ids.txt
+	image_ids.txt
 
 ```
 

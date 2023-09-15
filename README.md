@@ -76,7 +76,7 @@ Validation set and test set:
   <tr align="center">
     <td>MSR-VTT-CN</td>
     <td><a href='https://pan.baidu.com/s/1lg23K93lVwgdYs5qnTuMFg?pwd=p3p0'>msrvtt10k-resnext101_resnet152.tar.gz, pwd:p3p0</a></td>
-    <td><a href='https://www.aliyundrive.com/s/3sBNJqfTxcp'>cn_caption, pwd:oy27</a></td>
+    <td><a href='https://pan.baidu.com/s/1TwVJfK_gnqzZQXyM7JGkkg?pwd=es37'>cn_caption, pwd:es37</a></td>
   </tr>
   <tr align="center">
     <td>Multi-30K</td>
